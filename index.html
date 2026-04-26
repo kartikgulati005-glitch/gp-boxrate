@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  BoxRate v2 — Offline corrugated box rate calculator
+  BoxRate v3 — Offline corrugated box rate calculator
   ────────────────────────────────────────────────────
   HOW TO USE:
     1. Save this file as boxrate.html anywhere on your PC.
@@ -20,390 +20,496 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 14px; }
     body {
-      font-family: Cambria, 'Times New Roman', serif;
-      background: #FFFFFF;
-      color: #0A0A0A;
-      line-height: 1.45;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #FBFAFE;
+      color: #2A2A30;
+      line-height: 1.5;
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
-      font-feature-settings: 'kern', 'liga';
     }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
     input, select { font-family: inherit; color: inherit; font-size: 0.95rem; }
-    .mono { font-family: Consolas, 'Courier New', monospace; }
 
-    .app { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+    /* ───── Layout ───── */
+    .app { max-width: 1240px; margin: 0 auto; padding: 0 24px 60px; }
 
     .topbar {
-      display: flex; justify-content: space-between; align-items: baseline;
-      padding: 32px 0 18px;
-      border-bottom: 1px solid #0A0A0A;
-      margin-bottom: 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 24px 0 16px;
+      margin-bottom: 20px;
     }
-    .brand { font-size: 1.5rem; font-weight: 400; letter-spacing: -0.01em; }
-    .brand .dot {
-      display: inline-block; width: 6px; height: 6px;
-      background: #0A0A0A; margin: 0 8px 3px;
-      vertical-align: middle;
+    .brand {
+      font-size: 1.4rem; font-weight: 600;
+      color: #2A2A30;
+      letter-spacing: -0.01em;
     }
+    .brand span { color: #8B5FBF; }
     .brand small {
-      display: inline-block; margin-left: 12px;
-      font-family: Consolas, monospace;
-      font-size: 0.7rem; color: #767676;
-      letter-spacing: 0.1em; text-transform: uppercase;
+      display: block; font-size: 0.72rem; color: #8E8AA0;
+      font-weight: 400; margin-top: 1px;
+      letter-spacing: 0.04em;
     }
-    .tabs { display: flex; gap: 0; }
+    .tabs { display: flex; gap: 4px; }
     .tab {
-      padding: 6px 16px;
-      font-family: Cambria, serif; font-size: 0.95rem;
-      color: #767676;
-      border: 1px solid transparent;
-      transition: color 0.1s;
+      padding: 9px 18px;
+      font-size: 0.9rem; font-weight: 500;
+      color: #6B6878;
+      border-radius: 6px;
+      transition: all 0.15s;
     }
-    .tab:hover { color: #0A0A0A; }
-    .tab.active { color: #0A0A0A; border: 1px solid #0A0A0A; }
+    .tab:hover { color: #2A2A30; background: #F0EDF8; }
+    .tab.active {
+      color: #FFFFFF;
+      background: linear-gradient(135deg, #8B5FBF 0%, #6B5FE0 100%);
+    }
 
+    /* ───── Calc grid ───── */
     .calc-grid {
       display: grid;
-      grid-template-columns: 1fr 360px;
-      gap: 48px;
+      grid-template-columns: 1fr 380px;
+      gap: 28px;
       align-items: start;
     }
     @media (max-width: 1020px) {
-      .calc-grid { grid-template-columns: 1fr; gap: 24px; }
+      .calc-grid { grid-template-columns: 1fr; gap: 20px; }
       .output-panel { position: static !important; }
     }
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      column-gap: 40px;
-      row-gap: 0;
+    /* ───── Form: tabular rows ───── */
+    .form-card {
+      background: #FFFFFF;
+      border: 1px solid #E5E2EE;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(43, 39, 78, 0.03);
     }
-    @media (max-width: 720px) { .form-grid { grid-template-columns: 1fr; } }
 
-    .section-head {
-      grid-column: 1 / -1;
-      font-family: Consolas, monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.18em;
+    .section-banner {
+      background: linear-gradient(90deg, #F2EDF8 0%, #ECE6F4 100%);
+      color: #5A4D75;
+      padding: 11px 18px;
+      font-size: 0.78rem;
+      font-weight: 700;
       text-transform: uppercase;
-      color: #0A0A0A;
-      padding: 18px 0 8px;
-      border-bottom: 1px solid #0A0A0A;
-      margin-bottom: 4px;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid #E5E2EE;
+      border-top: 1px solid #E5E2EE;
     }
-    .section-head:first-child { padding-top: 4px; }
+    .section-banner:first-child { border-top: none; }
 
     .row {
       display: grid;
-      grid-template-columns: 100px 1fr;
-      gap: 12px;
+      grid-template-columns: 200px 1fr;
       align-items: center;
-      padding: 7px 0;
-      border-bottom: 1px solid #F2F2F2;
+      border-bottom: 1px solid #F0EDF8;
+      min-height: 44px;
     }
-    .row.full { grid-column: 1 / -1; }
-    .row label { font-size: 0.875rem; color: #4A4A4A; }
-    .row label .unit {
+    .row:last-child { border-bottom: none; }
+    .row > .label-cell {
+      padding: 10px 16px;
+      background: #F8F5FC;
+      font-size: 0.875rem;
+      color: #4A4760;
+      font-weight: 500;
+      height: 100%;
+      display: flex; flex-direction: column; justify-content: center;
+      border-right: 1px solid #F0EDF8;
+    }
+    .row > .label-cell .unit {
       display: block;
-      font-family: Consolas, monospace;
-      font-size: 0.65rem;
-      letter-spacing: 0.05em;
-      color: #9A9A9A;
+      font-size: 0.7rem;
+      color: #8E8AA0;
+      font-weight: 400;
       margin-top: 1px;
-      text-transform: uppercase;
+    }
+    .row > .input-cell {
+      padding: 8px 12px;
+      background: #FFFFFF;
     }
 
+    /* Inputs */
     .input, .select {
       width: 100%;
-      padding: 6px 8px;
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid #E5E5E5;
-      font-family: Consolas, monospace;
+      padding: 7px 10px;
+      background: #FFFFFF;
+      border: 1px solid #E5E2EE;
+      border-radius: 5px;
+      font-family: inherit;
       font-size: 0.9rem;
-      color: #0A0A0A;
-      transition: border-color 0.1s;
+      color: #2A2A30;
+      transition: all 0.15s;
     }
-    .input::placeholder { color: #C5C5C5; }
-    .input:focus, .select:focus { outline: none; border-bottom-color: #0A0A0A; }
-    .input.computed-display { border-bottom: none; color: #6B6B6B; }
+    .input::placeholder { color: #B8B4C8; }
+    .input:focus, .select:focus {
+      outline: none;
+      border-color: #8B5FBF;
+      box-shadow: 0 0 0 3px rgba(139, 95, 191, 0.1);
+    }
+    .input.computed-display {
+      background: #F8F5FC;
+      color: #4A4760;
+      cursor: default;
+      border-color: transparent;
+    }
     .select {
       appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path fill='%230A0A0A' d='M0 0l4 5 4-5z'/></svg>");
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%238B5FBF' d='M0 0l5 6 5-6z'/></svg>");
       background-repeat: no-repeat;
-      background-position: right 6px center;
-      padding-right: 22px;
+      background-position: right 10px center;
+      padding-right: 28px;
+      cursor: pointer;
     }
 
+    /* Pair input with X */
     .pair {
-      display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px;
-      align-items: center;
+      display: grid;
+      grid-template-columns: 1fr 36px 1fr;
+      gap: 6px;
+      align-items: stretch;
     }
-    .pair .x { font-family: Cambria, serif; font-style: italic; color: #767676; }
+    .pair .x-box {
+      background: #ECE6F4;
+      color: #6B5A8C;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+    }
 
+    /* GSM row with live output */
     .gsm-row {
-      display: grid; grid-template-columns: 1fr auto 1fr 64px;
-      gap: 8px; align-items: center;
+      display: grid;
+      grid-template-columns: 1fr 36px 1fr 88px;
+      gap: 6px;
+      align-items: stretch;
     }
     .gsm-out {
-      font-family: Consolas, monospace;
-      font-size: 0.8rem;
-      text-align: right;
-      color: #4A4A4A;
-      padding: 6px 4px;
-      border-bottom: 1px dotted #E5E5E5;
+      font-family: 'Segoe UI', monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      color: #5A4D75;
+      background: #DCEEFF;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
     }
+    .gsm-out.empty { color: #B8B4C8; background: #F5F3FA; font-weight: 400; }
 
+    /* Toggle */
     .toggle {
       display: inline-flex; align-items: center; gap: 10px;
       cursor: pointer; user-select: none;
     }
     .toggle input { display: none; }
     .toggle .track {
-      width: 32px; height: 18px; background: #E5E5E5; border-radius: 9px;
-      position: relative; transition: background 0.15s;
+      width: 38px; height: 22px; background: #D8D3E5; border-radius: 11px;
+      position: relative; transition: background 0.2s;
     }
     .toggle .track::after {
       content: ''; position: absolute;
-      width: 14px; height: 14px; background: #FFFFFF;
-      border-radius: 50%; top: 2px; left: 2px;
-      transition: transform 0.15s;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      width: 16px; height: 16px; background: #FFFFFF;
+      border-radius: 50%; top: 3px; left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
-    .toggle input:checked + .track { background: #0A0A0A; }
-    .toggle input:checked + .track::after { transform: translateX(14px); }
+    .toggle input:checked + .track {
+      background: linear-gradient(135deg, #8B5FBF 0%, #6B5FE0 100%);
+    }
+    .toggle input:checked + .track::after { transform: translateX(16px); }
     .toggle .label-text {
-      font-family: Consolas, monospace;
-      font-size: 0.78rem; color: #4A4A4A;
-      letter-spacing: 0.04em;
+      font-size: 0.85rem;
+      color: #4A4760;
     }
 
     .labour-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
+    /* Autocomplete */
     .autocomplete-wrap { position: relative; }
     .autocomplete-list {
       position: absolute; top: 100%; left: 0; right: 0;
-      background: #FFFFFF; border: 1px solid #0A0A0A;
+      background: #FFFFFF;
+      border: 1px solid #E5E2EE;
+      border-radius: 0 0 5px 5px;
       max-height: 200px; overflow-y: auto;
       z-index: 10; display: none;
+      box-shadow: 0 4px 12px rgba(43, 39, 78, 0.08);
     }
     .autocomplete-list.visible { display: block; }
     .autocomplete-item {
-      padding: 7px 10px; cursor: pointer;
+      padding: 8px 12px; cursor: pointer;
       font-size: 0.875rem;
-      border-bottom: 1px solid #F2F2F2;
+      border-bottom: 1px solid #F0EDF8;
     }
-    .autocomplete-item:hover { background: #F8F8F8; }
+    .autocomplete-item:hover { background: #F8F5FC; color: #8B5FBF; }
     .autocomplete-item:last-child { border-bottom: none; }
 
+    /* ───── Output panel ───── */
     .output-panel {
       position: sticky;
-      top: 24px;
-      border: 1px solid #0A0A0A;
-      padding: 24px;
+      top: 16px;
+      background: #FFFFFF;
+      border: 1px solid #E5E2EE;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(43, 39, 78, 0.03);
     }
-    .output-panel h3 {
-      font-family: Consolas, monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.18em;
+    .costing-banner {
+      background: linear-gradient(90deg, #B8E5D0 0%, #A3DEC4 100%);
+      color: #1F5440;
+      padding: 12px 18px;
+      font-size: 0.78rem;
+      font-weight: 700;
       text-transform: uppercase;
-      color: #0A0A0A;
-      padding-bottom: 14px;
-      margin-bottom: 8px;
-      border-bottom: 1px solid #0A0A0A;
+      letter-spacing: 0.1em;
     }
     .out-row {
-      display: flex; justify-content: space-between; align-items: baseline;
-      padding: 6px 0;
-      font-size: 0.88rem;
-      border-bottom: 1px solid #F2F2F2;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 10px 18px;
+      font-size: 0.875rem;
+      border-bottom: 1px solid #F0EDF8;
     }
     .out-row:last-of-type { border-bottom: none; }
-    .out-row .lbl { color: #4A4A4A; }
+    .out-row .lbl { color: #4A4760; }
     .out-row .lbl small {
-      font-family: Consolas, monospace;
-      font-size: 0.7rem; color: #9A9A9A;
-      letter-spacing: 0.04em;
+      font-size: 0.72rem; color: #8E8AA0;
+      margin-left: 4px;
     }
     .out-row .val {
-      font-family: Consolas, monospace;
-      color: #0A0A0A; font-size: 0.88rem;
+      font-family: 'Segoe UI', monospace;
+      font-weight: 500;
+      color: #2A2A30;
+      text-align: right;
     }
     .out-row.subtotal {
-      padding: 10px 0;
-      border-top: 1px solid #0A0A0A;
-      border-bottom: 1px solid #0A0A0A;
-      margin: 4px 0;
+      background: #F8F5FC;
+      padding: 12px 18px;
     }
-    .out-row.subtotal .lbl { color: #0A0A0A; }
-    .out-row.total { padding: 12px 0 8px; }
-    .out-row.total .lbl { color: #0A0A0A; font-size: 0.95rem; }
-    .out-row.total .val { font-size: 1rem; }
-    .out-row.rate {
-      margin-top: 12px;
-      padding: 14px 16px;
-      background: #0A0A0A; color: #FFFFFF;
-      border: none;
+    .out-row.subtotal .lbl { color: #2A2A30; font-weight: 600; }
+    .out-row.subtotal .val { font-weight: 700; }
+    .out-row.toggle-row {
+      background: #FEFCEB;
     }
-    .out-row.rate .lbl {
-      font-family: Consolas, monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #FFFFFF;
+    .out-row.labour-row-out {
+      background: #FEFCEB;
     }
-    .out-row.rate .val {
-      font-family: Cambria, serif;
-      font-size: 1.5rem; color: #FFFFFF;
-      letter-spacing: -0.01em;
+    .out-row.total {
+      background: #FEFCEB;
+      padding: 13px 18px;
+    }
+    .out-row.total .lbl {
+      font-weight: 700; color: #2A2A30;
+      font-size: 0.95rem;
+    }
+    .out-row.total .val {
+      font-weight: 700; font-size: 1rem;
+      color: #2A2A30;
+    }
+    .out-row.boxes-row {
+      background: #FEFCEB;
     }
 
     .save-bar {
-      margin-top: 16px;
-      display: grid; grid-template-columns: 1fr auto; gap: 8px;
+      padding: 14px 16px;
+      background: #FFFFFF;
+      border-top: 1px solid #F0EDF8;
     }
-    .btn {
-      padding: 11px 16px;
-      font-family: Cambria, serif;
-      font-size: 0.9rem;
-      letter-spacing: 0.01em;
-      transition: all 0.1s;
+    .btn-save {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #8B5FBF 0%, #6B5FE0 100%);
+      color: #FFFFFF;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
+      transition: transform 0.1s, box-shadow 0.15s;
     }
-    .btn-primary { background: #0A0A0A; color: #FFFFFF; }
-    .btn-primary:hover { background: #2A2A2A; }
-    .btn-ghost { background: transparent; color: #0A0A0A; border: 1px solid #0A0A0A; }
-    .btn-ghost:hover { background: #0A0A0A; color: #FFFFFF; }
+    .btn-save:hover {
+      box-shadow: 0 4px 14px rgba(139, 95, 191, 0.3);
+      transform: translateY(-1px);
+    }
+    .btn-save:active { transform: translateY(0); }
+    .btn-reset {
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px;
+      background: transparent;
+      color: #6B6878;
+      font-size: 0.825rem;
+      border-radius: 6px;
+      border: 1px solid #E5E2EE;
+      transition: all 0.15s;
+    }
+    .btn-reset:hover { background: #F8F5FC; color: #2A2A30; }
 
+    /* ───── Toast ───── */
     .toast {
       position: fixed; bottom: 24px; left: 50%;
       transform: translateX(-50%) translateY(80px);
-      background: #0A0A0A; color: #FFFFFF;
+      background: #2A2A30; color: #FFFFFF;
       padding: 12px 22px;
+      border-radius: 6px;
       font-size: 0.875rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
       transition: transform 0.25s ease;
       z-index: 100;
     }
     .toast.visible { transform: translateX(-50%) translateY(0); }
 
+    /* ───── History ───── */
     .history-controls {
-      display: flex; gap: 12px; align-items: center;
+      display: flex; gap: 10px; align-items: center;
       margin-bottom: 14px;
       flex-wrap: wrap;
     }
-    .search-box { flex: 1; min-width: 240px; position: relative; }
-    .search-box input {
-      width: 100%; padding: 12px 14px;
-      background: #FFFFFF;
-      border: 1px solid #0A0A0A;
-      font-family: Cambria, serif;
-      font-size: 1rem;
+    .search-box {
+      flex: 1; min-width: 240px; position: relative;
     }
-    .search-box input:focus { outline: none; }
+    .search-box input {
+      width: 100%; padding: 11px 14px 11px 38px;
+      background: #FFFFFF;
+      border: 1px solid #E5E2EE;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .search-box input:focus {
+      outline: none; border-color: #8B5FBF;
+      box-shadow: 0 0 0 3px rgba(139, 95, 191, 0.1);
+    }
+    .search-box::before {
+      content: '⌕'; position: absolute;
+      left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 1rem; color: #8E8AA0;
+    }
     .search-clear {
-      position: absolute; right: 10px; top: 50%;
-      transform: translateY(-50%);
-      width: 22px; height: 22px;
-      color: #767676; font-size: 0.85rem;
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      width: 26px; height: 26px; border-radius: 50%;
+      color: #8E8AA0; font-size: 0.9rem;
       display: none;
     }
     .search-clear.visible { display: flex; align-items: center; justify-content: center; }
-    .search-clear:hover { color: #0A0A0A; }
+    .search-clear:hover { background: #F0EDF8; color: #2A2A30; }
+
+    .btn-outline {
+      background: #FFFFFF; color: #8B5FBF;
+      border: 1px solid #D5C9E8;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .btn-outline:hover {
+      background: #F8F5FC;
+      border-color: #8B5FBF;
+    }
+    .btn-outline.btn-excel {
+      color: #1F5440;
+      border-color: #A3DEC4;
+      background: #EAFBF2;
+      font-weight: 600;
+    }
+    .btn-outline.btn-excel:hover {
+      background: #B8E5D0;
+      border-color: #1F5440;
+    }
 
     .sort-indicator {
-      font-family: Consolas, monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: #767676;
-      margin-bottom: 14px;
+      font-size: 0.78rem;
+      color: #6B6878;
+      margin-bottom: 12px;
+      padding: 0 4px;
     }
-    .sort-indicator strong { color: #0A0A0A; font-weight: 400; }
+    .sort-indicator strong { color: #2A2A30; font-weight: 600; }
 
     table.history-table {
       width: 100%;
       border-collapse: collapse;
-      border: 1px solid #0A0A0A;
+      background: #FFFFFF;
+      border: 1px solid #E5E2EE;
+      border-radius: 8px;
+      overflow: hidden;
     }
     .history-table th {
-      text-align: left; padding: 10px 14px;
-      font-family: Consolas, monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.1em;
+      text-align: left; padding: 12px 14px;
+      background: linear-gradient(90deg, #F2EDF8 0%, #ECE6F4 100%);
+      font-size: 0.74rem;
       text-transform: uppercase;
-      color: #767676;
-      font-weight: 400;
-      border-bottom: 1px solid #0A0A0A;
+      letter-spacing: 0.06em;
+      color: #5A4D75;
+      font-weight: 700;
+      border-bottom: 1px solid #E5E2EE;
     }
     .history-table td {
       padding: 12px 14px;
       font-size: 0.9rem;
-      border-bottom: 1px solid #F2F2F2;
+      color: #2A2A30;
+      border-bottom: 1px solid #F0EDF8;
     }
     .history-table tr:last-child td { border-bottom: none; }
-    .history-table tr:hover { background: #FAFAFA; }
-    .history-table .num { font-family: Consolas, monospace; text-align: right; }
-    .history-table .actions { display: flex; gap: 2px; justify-content: flex-end; }
+    .history-table tr:hover { background: #FBFAFE; }
+    .history-table .num {
+      font-family: 'Segoe UI', monospace;
+      font-weight: 500;
+      text-align: right;
+    }
+    .history-table .actions {
+      display: flex; gap: 2px; justify-content: flex-end;
+    }
     .icon-btn {
-      width: 28px; height: 28px;
+      width: 30px; height: 30px;
+      border-radius: 5px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem;
-      color: #4A4A4A;
+      font-size: 0.95rem;
+      color: #6B6878;
       transition: all 0.1s;
     }
-    .icon-btn:hover { background: #F2F2F2; color: #0A0A0A; }
-    .icon-btn.danger:hover { background: #0A0A0A; color: #FFFFFF; }
+    .icon-btn:hover { background: #F0EDF8; color: #8B5FBF; }
+    .icon-btn.danger:hover { background: #FCE3DD; color: #C0392B; }
 
     .empty-state {
       text-align: center; padding: 56px 24px;
-      border: 1px dashed #C5C5C5;
+      background: #FFFFFF;
+      border: 1px dashed #D5C9E8;
+      border-radius: 8px;
     }
     .empty-state h4 {
-      font-family: Cambria, serif;
       font-size: 1.05rem;
-      color: #0A0A0A;
-      font-weight: 400;
-      margin-bottom: 4px;
+      color: #2A2A30;
+      font-weight: 600;
+      margin-bottom: 6px;
     }
-    .empty-state p { font-size: 0.875rem; color: #767676; }
+    .empty-state p {
+      font-size: 0.875rem;
+      color: #6B6878;
+    }
 
     .pagination {
       display: flex; justify-content: center; align-items: center;
-      gap: 12px; margin-top: 20px;
+      gap: 12px;
+      margin-top: 20px;
       font-size: 0.875rem;
     }
     .pagination button {
-      padding: 6px 14px;
-      font-family: Cambria, serif;
-      color: #0A0A0A;
-      border: 1px solid #0A0A0A;
+      padding: 7px 14px;
+      border-radius: 6px;
+      color: #2A2A30;
+      border: 1px solid #E5E2EE;
       background: #FFFFFF;
       transition: all 0.1s;
     }
-    .pagination button:hover:not(:disabled) { background: #0A0A0A; color: #FFFFFF; }
-    .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
-    .pagination .indicator {
-      font-family: Consolas, monospace;
-      font-size: 0.78rem;
-      letter-spacing: 0.05em;
-      color: #767676;
+    .pagination button:hover:not(:disabled) {
+      background: #8B5FBF; color: #FFFFFF; border-color: #8B5FBF;
     }
+    .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pagination .indicator { color: #6B6878; }
 
-    .btn-outline {
-      background: #FFFFFF; color: #0A0A0A;
-      border: 1px solid #0A0A0A;
-      padding: 11px 18px;
-      font-family: Cambria, serif;
-      font-size: 0.9rem;
-      transition: all 0.1s;
-    }
-    .btn-outline:hover { background: #0A0A0A; color: #FFFFFF; }
-
+    /* ───── Modal ───── */
     .modal-backdrop {
       position: fixed; inset: 0;
-      background: rgba(10, 10, 10, 0.5);
+      background: rgba(43, 39, 78, 0.55);
       display: none; align-items: center; justify-content: center;
       z-index: 50;
       padding: 24px;
@@ -411,70 +517,76 @@
     .modal-backdrop.visible { display: flex; }
     .modal {
       background: #FFFFFF;
-      border: 1px solid #0A0A0A;
+      border-radius: 10px;
       max-width: 740px; width: 100%;
       max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
     }
     .modal-header {
       padding: 18px 24px;
-      border-bottom: 1px solid #0A0A0A;
+      background: linear-gradient(90deg, #F2EDF8 0%, #ECE6F4 100%);
+      border-bottom: 1px solid #E5E2EE;
       display: flex; justify-content: space-between; align-items: flex-start;
     }
     .modal-header h3 {
-      font-family: Cambria, serif;
-      font-size: 1.15rem;
-      font-weight: 400;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2A2A30;
     }
     .modal-header h3 small {
       display: block;
-      font-family: Consolas, monospace;
-      font-size: 0.7rem; color: #767676;
-      letter-spacing: 0.06em;
-      margin-top: 4px;
-      text-transform: uppercase;
+      font-size: 0.78rem;
+      color: #6B6878;
+      font-weight: 400;
+      margin-top: 3px;
     }
     .modal-body { padding: 18px 24px; }
-    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .modal-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
     @media (max-width: 580px) { .modal-grid { grid-template-columns: 1fr; } }
     .modal-grid h4 {
-      font-family: Consolas, monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.15em;
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #0A0A0A;
+      color: #8B5FBF;
       margin-bottom: 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid #0A0A0A;
-      font-weight: 400;
+      font-weight: 700;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #E5E2EE;
     }
     .kv {
       display: flex; justify-content: space-between;
-      padding: 5px 0;
-      font-size: 0.85rem;
-      border-bottom: 1px dotted #E5E5E5;
+      padding: 6px 0;
+      font-size: 0.86rem;
+      border-bottom: 1px dotted #E5E2EE;
     }
-    .kv .k { color: #4A4A4A; }
-    .kv .v { font-family: Consolas, monospace; color: #0A0A0A; }
+    .kv .k { color: #4A4760; }
+    .kv .v { font-family: 'Segoe UI', monospace; font-weight: 500; color: #2A2A30; }
     .modal-footer {
       padding: 14px 24px;
-      border-top: 1px solid #0A0A0A;
+      border-top: 1px solid #E5E2EE;
+      background: #FBFAFE;
       display: flex; justify-content: flex-end; gap: 8px;
     }
     .btn-secondary {
-      background: #0A0A0A; color: #FFFFFF;
+      background: #2A2A30; color: #FFFFFF;
       padding: 9px 16px;
-      font-family: Cambria, serif;
+      border-radius: 6px;
       font-size: 0.875rem;
+      font-weight: 500;
     }
-    .btn-secondary:hover { background: #2A2A2A; }
+    .btn-secondary:hover { background: #4A4760; }
     .btn-danger {
-      background: #FFFFFF; color: #B8412E;
-      border: 1px solid #B8412E;
+      background: #FFFFFF; color: #C0392B;
+      border: 1px solid #E8C4BD;
       padding: 9px 16px;
-      font-family: Cambria, serif;
+      border-radius: 6px;
       font-size: 0.875rem;
+      font-weight: 500;
     }
-    .btn-danger:hover { background: #B8412E; color: #FFFFFF; }
+    .btn-danger:hover { background: #C0392B; color: #FFFFFF; border-color: #C0392B; }
 
     .hidden { display: none !important; }
   </style>
@@ -483,8 +595,8 @@
   <div class="app">
     <div class="topbar">
       <div class="brand">
-        Box<span class="dot"></span>Rate
-        <small>offline · v2</small>
+        Box<span>Rate</span>
+        <small>Quote calculator · offline</small>
       </div>
       <div class="tabs">
         <button class="tab active" data-tab="calculator">Calculator</button>
@@ -492,189 +604,211 @@
       </div>
     </div>
 
+    <!-- ═══════════════ CALCULATOR ═══════════════ -->
     <div class="view view-calculator">
       <div class="calc-grid">
-        <div class="form-grid">
-          <div class="section-head">Order</div>
+        <!-- LEFT: form -->
+        <div class="form-card">
+          <div class="section-banner">Order</div>
           <div class="row">
-            <label>Date</label>
-            <input class="input computed-display" type="text" id="date" readonly>
+            <div class="label-cell">Date</div>
+            <div class="input-cell"><input class="input computed-display" type="text" id="date" readonly></div>
           </div>
           <div class="row">
-            <label>Ply <span class="unit">layers</span></label>
-            <select class="select" id="ply">
-              <option value="3">3 ply</option>
-              <option value="5" selected>5 ply</option>
-              <option value="7">7 ply</option>
-              <option value="9">9 ply</option>
-            </select>
-          </div>
-          <div class="row full">
-            <label>Party Name</label>
-            <div class="autocomplete-wrap">
-              <input class="input" type="text" id="partyName" autocomplete="off" placeholder="Hotel / client name">
-              <div class="autocomplete-list" id="partyAutocomplete"></div>
+            <div class="label-cell">Party Name</div>
+            <div class="input-cell">
+              <div class="autocomplete-wrap">
+                <input class="input" type="text" id="partyName" autocomplete="off" placeholder="Hotel / client name">
+                <div class="autocomplete-list" id="partyAutocomplete"></div>
+              </div>
             </div>
           </div>
           <div class="row">
-            <label>Box Name</label>
-            <input class="input" type="text" id="boxName" placeholder="What kind of box">
+            <div class="label-cell">Box Name</div>
+            <div class="input-cell"><input class="input" type="text" id="boxName" placeholder="What kind of box"></div>
           </div>
           <div class="row">
-            <label>Total Sheets</label>
-            <input class="input" type="number" id="totalSheets" step="0.01" min="0">
-          </div>
-
-          <div class="section-head">Sheet</div>
-          <div class="row">
-            <label>Size <span class="unit">L × W</span></label>
-            <div class="pair">
-              <input class="input" type="number" id="sheetL" step="0.01" min="0" placeholder="L">
-              <span class="x">×</span>
-              <input class="input" type="number" id="sheetW" step="0.01" min="0" placeholder="W">
-            </div>
+            <div class="label-cell">Total Sheets <span class="unit">qty ordered</span></div>
+            <div class="input-cell"><input class="input" type="number" id="totalSheets" step="0.01" min="0"></div>
           </div>
           <div class="row">
-            <label>GSM</label>
-            <input class="input" type="number" id="sheetGSM" step="0.01" min="0">
-          </div>
-          <div class="row">
-            <label>Duplex Rate <span class="unit">₹ per kg</span></label>
-            <input class="input" type="number" id="duplexRate" step="0.01" min="0">
-          </div>
-
-          <div class="section-head">Rolls (corrugation)</div>
-          <div class="row full">
-            <label>Roll Size <span class="unit">L × W</span></label>
-            <div class="pair">
-              <input class="input" type="number" id="rollL" step="0.01" min="0" placeholder="L">
-              <span class="x">×</span>
-              <input class="input" type="number" id="rollW" step="0.01" min="0" placeholder="W">
-            </div>
-          </div>
-          <div id="rollFields" style="display:contents"></div>
-
-          <div class="section-head">Lamination</div>
-          <div class="row">
-            <label>Enable</label>
-            <label class="toggle">
-              <input type="checkbox" id="enableLam">
-              <span class="track"></span>
-              <span class="label-text" id="enableLamLabel">No / outsourced</span>
-            </label>
-          </div>
-          <div class="row">
-            <label>Rate</label>
-            <input class="input" type="number" id="lamRate" step="0.01" min="0">
-          </div>
-          <div class="row full">
-            <label>Lam Size <span class="unit">L × W</span></label>
-            <div class="pair">
-              <input class="input" type="number" id="lamL" step="0.01" min="0" placeholder="L">
-              <span class="x">×</span>
-              <input class="input" type="number" id="lamW" step="0.01" min="0" placeholder="W">
-            </div>
-          </div>
-
-          <div class="section-head">Color / Printing</div>
-          <div class="row full">
-            <label>Mode</label>
-            <label class="toggle">
-              <input type="checkbox" id="useColorRate" checked>
-              <span class="track"></span>
-              <span class="label-text" id="useColorRateLabel">Colors × Rate</span>
-            </label>
-          </div>
-          <div id="pathA" style="display:contents">
-            <div class="row">
-              <label>Colors</label>
-              <select class="select" id="colors">
-                <option value="">—</option>
-                <option value="2">2</option>
-                <option value="4">4</option>
-                <option value="6">6</option>
+            <div class="label-cell">Ply <span class="unit">corrugation layers</span></div>
+            <div class="input-cell">
+              <select class="select" id="ply">
+                <option value="3">3 ply</option>
+                <option value="5" selected>5 ply</option>
+                <option value="7">7 ply</option>
+                <option value="9">9 ply</option>
               </select>
             </div>
-            <div class="row">
-              <label>Color Rate <span class="unit">₹ per color</span></label>
-              <input class="input" type="number" id="colorRate" step="0.01" min="0">
+          </div>
+
+          <div class="section-banner">Sheet (top liner)</div>
+          <div class="row">
+            <div class="label-cell">Sheet Size <span class="unit">L × W</span></div>
+            <div class="input-cell">
+              <div class="pair">
+                <input class="input" type="number" id="sheetL" step="0.01" min="0" placeholder="L">
+                <div class="x-box">×</div>
+                <input class="input" type="number" id="sheetW" step="0.01" min="0" placeholder="W">
+              </div>
             </div>
           </div>
-          <div id="pathB" class="hidden" style="display:contents">
+          <div class="row">
+            <div class="label-cell">Sheet GSM</div>
+            <div class="input-cell"><input class="input" type="number" id="sheetGSM" step="0.01" min="0"></div>
+          </div>
+          <div class="row">
+            <div class="label-cell">Duplex Rate <span class="unit">₹ per kg</span></div>
+            <div class="input-cell"><input class="input" type="number" id="duplexRate" step="0.01" min="0"></div>
+          </div>
+
+          <div class="section-banner">Rolls (corrugation)</div>
+          <div class="row">
+            <div class="label-cell">Roll Size <span class="unit">L × W</span></div>
+            <div class="input-cell">
+              <div class="pair">
+                <input class="input" type="number" id="rollL" step="0.01" min="0" placeholder="L">
+                <div class="x-box">×</div>
+                <input class="input" type="number" id="rollW" step="0.01" min="0" placeholder="W">
+              </div>
+            </div>
+          </div>
+          <div id="rollFields"></div>
+
+          <div class="section-banner">Lamination</div>
+          <div class="row">
+            <div class="label-cell">Enable Lamination</div>
+            <div class="input-cell">
+              <label class="toggle">
+                <input type="checkbox" id="enableLam">
+                <span class="track"></span>
+                <span class="label-text" id="enableLamLabel">No / outsourced</span>
+              </label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="label-cell">Lamination Size <span class="unit">L × W</span></div>
+            <div class="input-cell">
+              <div class="pair">
+                <input class="input" type="number" id="lamL" step="0.01" min="0" placeholder="L">
+                <div class="x-box">×</div>
+                <input class="input" type="number" id="lamW" step="0.01" min="0" placeholder="W">
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="label-cell">Lamination Rate</div>
+            <div class="input-cell"><input class="input" type="number" id="lamRate" step="0.01" min="0"></div>
+          </div>
+
+          <div class="section-banner">Color / Printing</div>
+          <div class="row">
+            <div class="label-cell">Use Color Rate</div>
+            <div class="input-cell">
+              <label class="toggle">
+                <input type="checkbox" id="useColorRate" checked>
+                <span class="track"></span>
+                <span class="label-text" id="useColorRateLabel">Colors × Rate</span>
+              </label>
+            </div>
+          </div>
+          <div id="pathA">
             <div class="row">
-              <label>Sheets Printed</label>
-              <input class="input" type="number" id="sheetsPrinted" step="0.01" min="0">
+              <div class="label-cell">Colors</div>
+              <div class="input-cell">
+                <select class="select" id="colors">
+                  <option value="">—</option>
+                  <option value="2">2</option>
+                  <option value="4">4</option>
+                  <option value="6">6</option>
+                </select>
+              </div>
             </div>
             <div class="row">
-              <label>Print Cost <span class="unit">₹ total</span></label>
-              <input class="input" type="number" id="printCost" step="0.01" min="0">
+              <div class="label-cell">Color Rate <span class="unit">₹ per color</span></div>
+              <div class="input-cell"><input class="input" type="number" id="colorRate" step="0.01" min="0"></div>
+            </div>
+          </div>
+          <div id="pathB" class="hidden">
+            <div class="row">
+              <div class="label-cell">Sheets Printed</div>
+              <div class="input-cell"><input class="input" type="number" id="sheetsPrinted" step="0.01" min="0"></div>
+            </div>
+            <div class="row">
+              <div class="label-cell">Print Cost <span class="unit">₹ total</span></div>
+              <div class="input-cell"><input class="input" type="number" id="printCost" step="0.01" min="0"></div>
             </div>
           </div>
 
-          <div class="section-head">Process &amp; Overheads</div>
+          <div class="section-banner">Process &amp; Overheads</div>
           <div class="row">
-            <label>Sheet Pasting</label>
-            <input class="input" type="number" id="sheetPasting" step="0.01" min="0" value="0">
+            <div class="label-cell">Sheet Pasting</div>
+            <div class="input-cell"><input class="input" type="number" id="sheetPasting" step="0.01" min="0" value="0"></div>
           </div>
           <div class="row">
-            <label>Cutting &amp; Pasting</label>
-            <input class="input" type="number" id="cuttingPasting" step="0.01" min="0" value="0">
+            <div class="label-cell">Cutting &amp; Pasting</div>
+            <div class="input-cell"><input class="input" type="number" id="cuttingPasting" step="0.01" min="0" value="0"></div>
           </div>
-          <div class="row full">
-            <label>Labour <span class="unit">% — preset or custom</span></label>
-            <div class="labour-row">
-              <select class="select" id="labourPreset">
-                <option value="10" selected>10%</option>
-                <option value="20">20%</option>
-                <option value="30">30%</option>
-                <option value="40">40%</option>
-                <option value="50">50%</option>
-                <option value="">— custom</option>
-              </select>
-              <input class="input" type="number" id="labourCustom" step="0.01" min="0" placeholder="Custom %">
+          <div class="row">
+            <div class="label-cell">Labour <span class="unit">% — preset or custom</span></div>
+            <div class="input-cell">
+              <div class="labour-row">
+                <select class="select" id="labourPreset">
+                  <option value="10" selected>10%</option>
+                  <option value="20">20%</option>
+                  <option value="30">30%</option>
+                  <option value="40">40%</option>
+                  <option value="50">50%</option>
+                  <option value="">— custom</option>
+                </select>
+                <input class="input" type="number" id="labourCustom" step="0.01" min="0" placeholder="Custom %">
+              </div>
             </div>
           </div>
           <div class="row">
-            <label>Boxes / Sheet</label>
-            <input class="input" type="number" id="boxesPerSheet" step="0.01" min="0">
+            <div class="label-cell">Boxes per Sheet</div>
+            <div class="input-cell"><input class="input" type="number" id="boxesPerSheet" step="0.01" min="0"></div>
           </div>
           <div class="row">
-            <label>Cartage <span class="unit">₹ flat</span></label>
-            <input class="input" type="number" id="cartage" step="0.01" min="0" value="0">
+            <div class="label-cell">Cartage <span class="unit">₹ flat</span></div>
+            <div class="input-cell"><input class="input" type="number" id="cartage" step="0.01" min="0" value="0"></div>
           </div>
         </div>
 
+        <!-- RIGHT: output panel -->
         <aside class="output-panel">
-          <h3>Costing</h3>
-          <div class="out-row"><span class="lbl">Duplex</span><span class="val" id="o-duplexCost">—</span></div>
-          <div class="out-row"><span class="lbl">Lamination</span><span class="val" id="o-lamCost">—</span></div>
-          <div class="out-row"><span class="lbl">Printing</span><span class="val" id="o-printingCost">—</span></div>
-          <div class="out-row"><span class="lbl">Nali</span><span class="val" id="o-naliCost">—</span></div>
-          <div class="out-row"><span class="lbl">Sheet Pasting</span><span class="val" id="o-sheetPastingCost">—</span></div>
-          <div class="out-row"><span class="lbl">Cutting &amp; Pasting</span><span class="val" id="o-cuttingPastingCost">—</span></div>
-          <div class="out-row subtotal"><span class="lbl">Subtotal</span><span class="val" id="o-subtotal">—</span></div>
-          <div class="out-row"><span class="lbl">Labour <small id="o-labourPct"></small></span><span class="val" id="o-labourCost">—</span></div>
-          <div class="out-row"><span class="lbl">Cartage</span><span class="val" id="o-cartage">—</span></div>
-          <div class="out-row total"><span class="lbl">Total Cost</span><span class="val" id="o-totalCost">—</span></div>
-          <div class="out-row" style="border:none;"><span class="lbl">Boxes / Sheet</span><span class="val" id="o-boxesPerSheet">—</span></div>
-          <div class="out-row rate"><span class="lbl">Rate / Box</span><span class="val" id="o-rate">—</span></div>
-
+          <div class="costing-banner">Costing</div>
+          <div class="out-row"><span class="lbl">Duplex Costing</span><span class="val" id="o-duplexCost">₹0.00</span></div>
+          <div class="out-row"><span class="lbl">Lamination</span><span class="val" id="o-lamCost">₹0.00</span></div>
+          <div class="out-row"><span class="lbl">Printing</span><span class="val" id="o-printingCost">₹0.00</span></div>
+          <div class="out-row"><span class="lbl">Nali</span><span class="val" id="o-naliCost">₹0.00</span></div>
+          <div class="out-row"><span class="lbl">Sheet Pasting</span><span class="val" id="o-sheetPastingCost">₹0.00</span></div>
+          <div class="out-row"><span class="lbl">Cutting &amp; Pasting</span><span class="val" id="o-cuttingPastingCost">₹0.00</span></div>
+          <div class="out-row subtotal"><span class="lbl">Total</span><span class="val" id="o-subtotal">₹0.00</span></div>
+          <div class="out-row labour-row-out"><span class="lbl">Labour <small id="o-labourPct">(10%)</small></span><span class="val" id="o-labourCost">₹0.00</span></div>
+          <div class="out-row labour-row-out"><span class="lbl">Cartage</span><span class="val" id="o-cartage">₹0.00</span></div>
+          <div class="out-row total"><span class="lbl">Total Cost</span><span class="val" id="o-totalCost">₹0.00</span></div>
+          <div class="out-row boxes-row"><span class="lbl">Boxes per sheet</span><span class="val" id="o-boxesPerSheet">—</span></div>
+          <div class="out-row total"><span class="lbl">Rate</span><span class="val" id="o-rate">—</span></div>
           <div class="save-bar">
-            <button class="btn btn-primary" id="saveBtn">Save Calculation</button>
-            <button class="btn btn-ghost" id="newBtn" title="Reset form">Reset</button>
+            <button class="btn-save" id="saveBtn">Save Calculation</button>
+            <button class="btn-reset" id="newBtn">Reset Form</button>
           </div>
         </aside>
       </div>
     </div>
 
+    <!-- ═══════════════ HISTORY ═══════════════ -->
     <div class="view view-history hidden">
       <div class="history-controls">
         <div class="search-box">
           <input type="text" id="searchInput" placeholder="Search by Party Name…" autocomplete="off">
           <button class="search-clear" id="searchClear">✕</button>
         </div>
-        <button class="btn-outline" id="exportBtn">Export Backup</button>
-        <button class="btn-outline" id="importBtn">Import Backup</button>
+        <button class="btn-outline btn-excel" id="exportXlsxBtn">📊 Export to Excel</button>
+        <button class="btn-outline" id="exportBtn">Export JSON</button>
+        <button class="btn-outline" id="importBtn">Import JSON</button>
         <input type="file" id="importFile" accept="application/json" style="display:none">
       </div>
       <div class="sort-indicator">
@@ -706,7 +840,7 @@
 
   <script>
     /* ════════════════════════════════════════════════════════════════
-       BoxRate v2 — UPDATED: lamCost = (lamL × lamW) / (lamRate / 100)
+       BoxRate v3 — UPDATED: lamCost = (lamL × lamW) / (lamRate / 100)
        ──────────────────────────────────────────────────────────────── */
 
     const STORE_KEY = 'boxrate.records.v1';
@@ -765,22 +899,22 @@
       container.innerHTML = '';
       for (let i = 1; i <= count; i++) {
         const wrap = document.createElement('div');
-        wrap.style.display = 'contents';
         wrap.innerHTML = `
-          <div class="row full">
-            <label>Roll ${i} GSM <span class="unit">a + (b × 1.6)</span></label>
-            <div class="gsm-row">
-              <input class="input" type="number" id="roll${i}GSMa" step="0.01" min="0" placeholder="a">
-              <span class="x">×</span>
-              <input class="input" type="number" id="roll${i}GSMb" step="0.01" min="0" placeholder="b">
-              <span class="gsm-out" id="gsmSum${i}">—</span>
+          <div class="row">
+            <div class="label-cell">Roll ${i} GSM <span class="unit">a + (b × 1.6)</span></div>
+            <div class="input-cell">
+              <div class="gsm-row">
+                <input class="input" type="number" id="roll${i}GSMa" step="0.01" min="0" placeholder="a">
+                <div class="x-box">×</div>
+                <input class="input" type="number" id="roll${i}GSMb" step="0.01" min="0" placeholder="b">
+                <div class="gsm-out empty" id="gsmSum${i}">—</div>
+              </div>
             </div>
           </div>
           <div class="row">
-            <label>Roll ${i} Price <span class="unit">₹ per kg</span></label>
-            <input class="input" type="number" id="roll${i}Price" step="0.01" min="0">
+            <div class="label-cell">Roll ${i} Price <span class="unit">₹ per kg</span></div>
+            <div class="input-cell"><input class="input" type="number" id="roll${i}Price" step="0.01" min="0"></div>
           </div>
-          <div class="row"></div>
         `;
         container.appendChild(wrap);
       }
@@ -841,8 +975,6 @@
       out.gsmSum4 = inp.roll4GSMa + (inp.roll4GSMb * 1.6);
 
       out.duplexCost = (inp.sheetL * inp.sheetW * inp.sheetGSM) / 1550 * inp.duplexRate / 1000;
-
-      // ★ UPDATED: lamRate is divided by 100 first
       out.lamCost = safe(inp.lamL * inp.lamW, inp.lamRate / 100);
 
       if (inp.useColorRate) {
@@ -874,6 +1006,7 @@
         if (el) {
           const hasInput = inp[`roll${i}GSMa`] > 0 || inp[`roll${i}GSMb`] > 0;
           el.textContent = hasInput ? fmtNum(out[`gsmSum${i}`]) : '—';
+          el.classList.toggle('empty', !hasInput);
         }
       }
       $('o-duplexCost').textContent = fmtINR(out.duplexCost);
@@ -957,7 +1090,7 @@
       };
       state.records.push(record);
       saveAll(state.records);
-      showToast('Saved · ' + record.partyName);
+      showToast('✓ Saved · ' + record.partyName);
     }
     function resetForm() {
       document.querySelectorAll('.view-calculator input[type="number"]').forEach(el => el.value = '');
@@ -1012,16 +1145,16 @@
           <tbody>
             ${page.map(r => `
               <tr>
-                <td class="mono">${formatDateDisplay(r.date)}</td>
-                <td>${escapeHTML(r.partyName)}</td>
+                <td>${formatDateDisplay(r.date)}</td>
+                <td><strong>${escapeHTML(r.partyName)}</strong></td>
                 <td>${escapeHTML(r.boxName)}</td>
                 <td class="num">${r.ply}</td>
                 <td class="num">${fmtINR(r.rate)}</td>
                 <td class="num">${fmtINR(r.totalCost)}</td>
                 <td class="actions">
-                  <button class="icon-btn" title="View" data-action="view" data-id="${r.id}">○</button>
+                  <button class="icon-btn" title="View" data-action="view" data-id="${r.id}">👁</button>
                   <button class="icon-btn" title="Clone" data-action="clone" data-id="${r.id}">⎘</button>
-                  <button class="icon-btn danger" title="Delete" data-action="delete" data-id="${r.id}">×</button>
+                  <button class="icon-btn danger" title="Delete" data-action="delete" data-id="${r.id}">🗑</button>
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -1171,6 +1304,243 @@
     $('modalDelete').onclick = () => state.viewingRecord && deleteRecord(state.viewingRecord.id);
     $('modalClone').onclick = () => state.viewingRecord && cloneRecord(state.viewingRecord.id);
 
+    /* ════════════════════════════════════════════════════════════════
+       Excel (.xlsx) export — pure-JS, no dependencies
+       Produces a real Office Open XML file with: bold/frozen header,
+       auto-filter dropdowns, currency-formatted ₹ columns, and column
+       widths sized for readability.
+       ──────────────────────────────────────────────────────────────── */
+
+    // CRC32 table for ZIP integrity
+    const CRC_TABLE = (() => {
+      const t = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        t[i] = c;
+      }
+      return t;
+    })();
+    function crc32(bytes) {
+      let crc = 0xFFFFFFFF;
+      for (let i = 0; i < bytes.length; i++)
+        crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ bytes[i]) & 0xFF];
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    const _enc = new TextEncoder();
+    function strBytes(s) { return _enc.encode(s); }
+
+    // Build a valid ZIP archive (STORED, no compression)
+    function createZip(files) {
+      const local = [];
+      const central = [];
+      let offset = 0;
+      for (const f of files) {
+        const nameB = strBytes(f.name);
+        const dataB = f.bytes instanceof Uint8Array ? f.bytes : strBytes(f.bytes);
+        const c = crc32(dataB);
+        const sz = dataB.length;
+        // Local file header
+        const lh = new Uint8Array(30 + nameB.length);
+        const lv = new DataView(lh.buffer);
+        lv.setUint32(0, 0x04034b50, true);
+        lv.setUint16(4, 20, true);  lv.setUint16(6, 0, true);
+        lv.setUint16(8, 0, true);   lv.setUint16(10, 0, true); lv.setUint16(12, 0, true);
+        lv.setUint32(14, c, true);  lv.setUint32(18, sz, true); lv.setUint32(22, sz, true);
+        lv.setUint16(26, nameB.length, true); lv.setUint16(28, 0, true);
+        lh.set(nameB, 30);
+        local.push(lh, dataB);
+        // Central directory entry
+        const ch = new Uint8Array(46 + nameB.length);
+        const cv = new DataView(ch.buffer);
+        cv.setUint32(0, 0x02014b50, true);
+        cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+        cv.setUint16(8, 0, true); cv.setUint16(10, 0, true);
+        cv.setUint16(12, 0, true); cv.setUint16(14, 0, true);
+        cv.setUint32(16, c, true); cv.setUint32(20, sz, true); cv.setUint32(24, sz, true);
+        cv.setUint16(28, nameB.length, true); cv.setUint16(30, 0, true); cv.setUint16(32, 0, true);
+        cv.setUint16(34, 0, true); cv.setUint16(36, 0, true); cv.setUint32(38, 0, true);
+        cv.setUint32(42, offset, true);
+        ch.set(nameB, 46);
+        central.push(ch);
+        offset += lh.length + dataB.length;
+      }
+      const cdSize = central.reduce((s, c) => s + c.length, 0);
+      const eocd = new Uint8Array(22);
+      const ev = new DataView(eocd.buffer);
+      ev.setUint32(0, 0x06054b50, true);
+      ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+      ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+      return new Blob([...local, ...central, eocd],
+        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+
+    function xmlEsc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g,
+        m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[m]));
+    }
+    function colLetter(n) {
+      let s = ''; n--;
+      while (n >= 0) { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; }
+      return s;
+    }
+    function rollGsmStr(a, b) { return (a || b) ? `${a || 0} × ${b || 0}` : ''; }
+
+    function exportToExcel() {
+      if (state.records.length === 0) { showToast('No records to export'); return; }
+
+      // Sort by Party Name (matches the History view)
+      const records = [...state.records].sort((a, b) => a.partyName.localeCompare(b.partyName));
+
+      // Column definitions: header, accessor, type ('s'=string, 'n'=number, 'c'=currency), width
+      const cols = [
+        { h: 'Date',                f: r => r.date,                                  t: 's', w: 12 },
+        { h: 'Party Name',          f: r => r.partyName,                             t: 's', w: 28 },
+        { h: 'Box Name',            f: r => r.boxName,                               t: 's', w: 28 },
+        { h: 'Ply',                 f: r => r.ply,                                   t: 'n', w: 6  },
+        { h: 'Total Sheets',        f: r => r.inputs.totalSheets,                    t: 'n', w: 12 },
+        { h: 'Sheet L',             f: r => r.inputs.sheetL,                         t: 'n', w: 9  },
+        { h: 'Sheet W',             f: r => r.inputs.sheetW,                         t: 'n', w: 9  },
+        { h: 'Sheet GSM',           f: r => r.inputs.sheetGSM,                       t: 'n', w: 10 },
+        { h: 'Duplex Rate (₹/kg)',  f: r => r.inputs.duplexRate,                     t: 'n', w: 14 },
+        { h: 'Roll L',              f: r => r.inputs.rollL,                          t: 'n', w: 9  },
+        { h: 'Roll W',              f: r => r.inputs.rollW,                          t: 'n', w: 9  },
+        { h: 'Roll 1 GSM (a×b)',    f: r => rollGsmStr(r.inputs.roll1GSMa, r.inputs.roll1GSMb), t: 's', w: 12 },
+        { h: 'Roll 1 Price',        f: r => r.inputs.roll1Price,                     t: 'n', w: 11 },
+        { h: 'Roll 2 GSM (a×b)',    f: r => rollGsmStr(r.inputs.roll2GSMa, r.inputs.roll2GSMb), t: 's', w: 12 },
+        { h: 'Roll 2 Price',        f: r => r.inputs.roll2Price,                     t: 'n', w: 11 },
+        { h: 'Roll 3 GSM (a×b)',    f: r => rollGsmStr(r.inputs.roll3GSMa, r.inputs.roll3GSMb), t: 's', w: 12 },
+        { h: 'Roll 3 Price',        f: r => r.inputs.roll3Price,                     t: 'n', w: 11 },
+        { h: 'Roll 4 GSM (a×b)',    f: r => rollGsmStr(r.inputs.roll4GSMa, r.inputs.roll4GSMb), t: 's', w: 12 },
+        { h: 'Roll 4 Price',        f: r => r.inputs.roll4Price,                     t: 'n', w: 11 },
+        { h: 'Lamination',          f: r => r.inputs.enableLam ? 'In-house' : 'Outsourced', t: 's', w: 12 },
+        { h: 'Lam L',               f: r => r.inputs.lamL,                           t: 'n', w: 9  },
+        { h: 'Lam W',               f: r => r.inputs.lamW,                           t: 'n', w: 9  },
+        { h: 'Lam Rate',            f: r => r.inputs.lamRate,                        t: 'n', w: 11 },
+        { h: 'Print Mode',          f: r => r.inputs.useColorRate ? 'Colors × Rate' : 'Cost ÷ Sheets', t: 's', w: 16 },
+        { h: 'Colors / Sheets Printed', f: r => r.inputs.useColorRate ? r.inputs.colors : r.inputs.sheetsPrinted, t: 'n', w: 14 },
+        { h: 'Color Rate / Print Cost', f: r => r.inputs.useColorRate ? r.inputs.colorRate : r.inputs.printCost, t: 'n', w: 16 },
+        { h: 'Sheet Pasting',       f: r => r.inputs.sheetPasting,                   t: 'n', w: 12 },
+        { h: 'Cutting & Pasting',   f: r => r.inputs.cuttingPasting,                 t: 'n', w: 14 },
+        { h: 'Labour %',            f: r => r.inputs.labourPct,                      t: 'n', w: 10 },
+        { h: 'Boxes / Sheet',       f: r => r.inputs.boxesPerSheet,                  t: 'n', w: 12 },
+        { h: 'Cartage',             f: r => r.inputs.cartage,                        t: 'c', w: 11 },
+        { h: 'Duplex Cost',         f: r => r.outputs.duplexCost,                    t: 'c', w: 12 },
+        { h: 'Lamination Cost',     f: r => r.outputs.lamCost,                       t: 'c', w: 13 },
+        { h: 'Printing Cost',       f: r => r.outputs.printingCost,                  t: 'c', w: 12 },
+        { h: 'Nali Cost',           f: r => r.outputs.naliCost,                      t: 'c', w: 11 },
+        { h: 'Subtotal',            f: r => r.outputs.subtotal,                      t: 'c', w: 12 },
+        { h: 'Labour Cost',         f: r => r.outputs.labourCost,                    t: 'c', w: 12 },
+        { h: 'Total Cost',          f: r => r.outputs.totalCost,                     t: 'c', w: 13 },
+        { h: 'Rate per Box',        f: r => r.outputs.rate,                          t: 'c', w: 13 },
+        { h: 'Saved At',            f: r => r.savedAt ? r.savedAt.replace('T', ' ').slice(0, 19) : '', t: 's', w: 19 },
+      ];
+      const lastCol = colLetter(cols.length);
+      const lastRow = records.length + 1;
+
+      // Build sheet1.xml
+      const colsXml = '<cols>' + cols.map((c, i) =>
+        `<col min="${i+1}" max="${i+1}" width="${c.w}" customWidth="1"/>`).join('') + '</cols>';
+
+      // Header row — bold (style 1)
+      const headerCells = cols.map((c, i) =>
+        `<c r="${colLetter(i+1)}1" t="inlineStr" s="1"><is><t>${xmlEsc(c.h)}</t></is></c>`).join('');
+      const headerRow = `<row r="1">${headerCells}</row>`;
+
+      // Data rows
+      const dataRows = records.map((r, ri) => {
+        const rowNum = ri + 2;
+        const cells = cols.map((c, i) => {
+          const ref = colLetter(i+1) + rowNum;
+          const v = c.f(r);
+          if (c.t === 's') {
+            return `<c r="${ref}" t="inlineStr"><is><t>${xmlEsc(v)}</t></is></c>`;
+          } else if (c.t === 'c') {
+            const n = (typeof v === 'number' && isFinite(v)) ? v : 0;
+            return `<c r="${ref}" s="2"><v>${n}</v></c>`;
+          } else {
+            const n = (typeof v === 'number' && isFinite(v)) ? v : 0;
+            return `<c r="${ref}"><v>${n}</v></c>`;
+          }
+        }).join('');
+        return `<row r="${rowNum}">${cells}</row>`;
+      }).join('');
+
+      const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetViews><sheetView tabSelected="1" workbookViewId="0">
+<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>
+<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>
+</sheetView></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+${colsXml}
+<sheetData>${headerRow}${dataRows}</sheetData>
+<autoFilter ref="A1:${lastCol}${lastRow}"/>
+</worksheet>`;
+
+      const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;₹&quot;#,##0.00"/></numFmts>
+<fonts count="2">
+<font><sz val="11"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><name val="Calibri"/></font>
+</fonts>
+<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+<borders count="1"><border/></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="3">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+      const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="BoxRate Records" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+      const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+      const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+      const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+
+      const blob = createZip([
+        { name: '[Content_Types].xml',          bytes: contentTypes },
+        { name: '_rels/.rels',                  bytes: rootRels },
+        { name: 'xl/workbook.xml',              bytes: workbookXml },
+        { name: 'xl/_rels/workbook.xml.rels',   bytes: workbookRels },
+        { name: 'xl/styles.xml',                bytes: stylesXml },
+        { name: 'xl/worksheets/sheet1.xml',     bytes: sheetXml },
+      ]);
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `boxrate-master-${todayISO()}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`✓ Exported ${records.length} records to Excel`);
+    }
+
     function exportBackup() {
       const blob = new Blob([JSON.stringify(state.records, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -1203,6 +1573,7 @@
       reader.readAsText(file);
     }
     $('exportBtn').onclick = exportBackup;
+    $('exportXlsxBtn').onclick = exportToExcel;
     $('importBtn').onclick = () => $('importFile').click();
     $('importFile').onchange = (e) => {
       if (e.target.files[0]) importBackup(e.target.files[0]);
