@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<!--
+  BoxRate v2 — Offline corrugated box rate calculator
+  ────────────────────────────────────────────────────
+  HOW TO USE:
+    1. Save this file as boxrate.html anywhere on your PC.
+    2. Double-click to open in any browser (Chrome, Edge, Firefox).
+    3. Data persists in browser local storage automatically.
+    4. Use "Export Backup" weekly to save a JSON file as a real backup.
+    5. To "install" on another PC: just send this .html file.
+
+  NO INTERNET, NO INSTALL, NO DEPENDENCIES.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoxRate</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      font-family: Cambria, 'Times New Roman', serif;
+      background: #FFFFFF;
+      color: #0A0A0A;
+      line-height: 1.45;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: 'kern', 'liga';
+    }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+    input, select { font-family: inherit; color: inherit; font-size: 0.95rem; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+
+    .app { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+
+    .topbar {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 32px 0 18px;
+      border-bottom: 1px solid #0A0A0A;
+      margin-bottom: 24px;
+    }
+    .brand { font-size: 1.5rem; font-weight: 400; letter-spacing: -0.01em; }
+    .brand .dot {
+      display: inline-block; width: 6px; height: 6px;
+      background: #0A0A0A; margin: 0 8px 3px;
+      vertical-align: middle;
+    }
+    .brand small {
+      display: inline-block; margin-left: 12px;
+      font-family: Consolas, monospace;
+      font-size: 0.7rem; color: #767676;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .tabs { display: flex; gap: 0; }
+    .tab {
+      padding: 6px 16px;
+      font-family: Cambria, serif; font-size: 0.95rem;
+      color: #767676;
+      border: 1px solid transparent;
+      transition: color 0.1s;
+    }
+    .tab:hover { color: #0A0A0A; }
+    .tab.active { color: #0A0A0A; border: 1px solid #0A0A0A; }
+
+    .calc-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 48px;
+      align-items: start;
+    }
+    @media (max-width: 1020px) {
+      .calc-grid { grid-template-columns: 1fr; gap: 24px; }
+      .output-panel { position: static !important; }
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 40px;
+      row-gap: 0;
+    }
+    @media (max-width: 720px) { .form-grid { grid-template-columns: 1fr; } }
+
+    .section-head {
+      grid-column: 1 / -1;
+      font-family: Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #0A0A0A;
+      padding: 18px 0 8px;
+      border-bottom: 1px solid #0A0A0A;
+      margin-bottom: 4px;
+    }
+    .section-head:first-child { padding-top: 4px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #F2F2F2;
+    }
+    .row.full { grid-column: 1 / -1; }
+    .row label { font-size: 0.875rem; color: #4A4A4A; }
+    .row label .unit {
+      display: block;
+      font-family: Consolas, monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.05em;
+      color: #9A9A9A;
+      margin-top: 1px;
+      text-transform: uppercase;
+    }
+
+    .input, .select {
+      width: 100%;
+      padding: 6px 8px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #E5E5E5;
+      font-family: Consolas, monospace;
+      font-size: 0.9rem;
+      color: #0A0A0A;
+      transition: border-color 0.1s;
+    }
+    .input::placeholder { color: #C5C5C5; }
+    .input:focus, .select:focus { outline: none; border-bottom-color: #0A0A0A; }
+    .input.computed-display { border-bottom: none; color: #6B6B6B; }
+    .select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path fill='%230A0A0A' d='M0 0l4 5 4-5z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      padding-right: 22px;
+    }
+
+    .pair {
+      display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px;
+      align-items: center;
+    }
+    .pair .x { font-family: Cambria, serif; font-style: italic; color: #767676; }
+
+    .gsm-row {
+      display: grid; grid-template-columns: 1fr auto 1fr 64px;
+      gap: 8px; align-items: center;
+    }
+    .gsm-out {
+      font-family: Consolas, monospace;
+      font-size: 0.8rem;
+      text-align: right;
+      color: #4A4A4A;
+      padding: 6px 4px;
+      border-bottom: 1px dotted #E5E5E5;
+    }
+
+    .toggle {
+      display: inline-flex; align-items: center; gap: 10px;
+      cursor: pointer; user-select: none;
+    }
+    .toggle input { display: none; }
+    .toggle .track {
+      width: 32px; height: 18px; background: #E5E5E5; border-radius: 9px;
+      position: relative; transition: background 0.15s;
+    }
+    .toggle .track::after {
+      content: ''; position: absolute;
+      width: 14px; height: 14px; background: #FFFFFF;
+      border-radius: 50%; top: 2px; left: 2px;
+      transition: transform 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .toggle input:checked + .track { background: #0A0A0A; }
+    .toggle input:checked + .track::after { transform: translateX(14px); }
+    .toggle .label-text {
+      font-family: Consolas, monospace;
+      font-size: 0.78rem; color: #4A4A4A;
+      letter-spacing: 0.04em;
+    }
+
+    .labour-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: #FFFFFF; border: 1px solid #0A0A0A;
+      max-height: 200px; overflow-y: auto;
+      z-index: 10; display: none;
+    }
+    .autocomplete-list.visible { display: block; }
+    .autocomplete-item {
+      padding: 7px 10px; cursor: pointer;
+      font-size: 0.875rem;
+      border-bottom: 1px solid #F2F2F2;
+    }
+    .autocomplete-item:hover { background: #F8F8F8; }
+    .autocomplete-item:last-child { border-bottom: none; }
+
+    .output-panel {
+      position: sticky;
+      top: 24px;
+      border: 1px solid #0A0A0A;
+      padding: 24px;
+    }
+    .output-panel h3 {
+      font-family: Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #0A0A0A;
+      padding-bottom: 14px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #0A0A0A;
+    }
+    .out-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 6px 0;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #F2F2F2;
+    }
+    .out-row:last-of-type { border-bottom: none; }
+    .out-row .lbl { color: #4A4A4A; }
+    .out-row .lbl small {
+      font-family: Consolas, monospace;
+      font-size: 0.7rem; color: #9A9A9A;
+      letter-spacing: 0.04em;
+    }
+    .out-row .val {
+      font-family: Consolas, monospace;
+      color: #0A0A0A; font-size: 0.88rem;
+    }
+    .out-row.subtotal {
+      padding: 10px 0;
+      border-top: 1px solid #0A0A0A;
+      border-bottom: 1px solid #0A0A0A;
+      margin: 4px 0;
+    }
+    .out-row.subtotal .lbl { color: #0A0A0A; }
+    .out-row.total { padding: 12px 0 8px; }
+    .out-row.total .lbl { color: #0A0A0A; font-size: 0.95rem; }
+    .out-row.total .val { font-size: 1rem; }
+    .out-row.rate {
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: #0A0A0A; color: #FFFFFF;
+      border: none;
+    }
+    .out-row.rate .lbl {
+      font-family: Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #FFFFFF;
+    }
+    .out-row.rate .val {
+      font-family: Cambria, serif;
+      font-size: 1.5rem; color: #FFFFFF;
+      letter-spacing: -0.01em;
+    }
+
+    .save-bar {
+      margin-top: 16px;
+      display: grid; grid-template-columns: 1fr auto; gap: 8px;
+    }
+    .btn {
+      padding: 11px 16px;
+      font-family: Cambria, serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.01em;
+      transition: all 0.1s;
+    }
+    .btn-primary { background: #0A0A0A; color: #FFFFFF; }
+    .btn-primary:hover { background: #2A2A2A; }
+    .btn-ghost { background: transparent; color: #0A0A0A; border: 1px solid #0A0A0A; }
+    .btn-ghost:hover { background: #0A0A0A; color: #FFFFFF; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #0A0A0A; color: #FFFFFF;
+      padding: 12px 22px;
+      font-size: 0.875rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      transition: transform 0.25s ease;
+      z-index: 100;
+    }
+    .toast.visible { transform: translateX(-50%) translateY(0); }
+
+    .history-controls {
+      display: flex; gap: 12px; align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .search-box { flex: 1; min-width: 240px; position: relative; }
+    .search-box input {
+      width: 100%; padding: 12px 14px;
+      background: #FFFFFF;
+      border: 1px solid #0A0A0A;
+      font-family: Cambria, serif;
+      font-size: 1rem;
+    }
+    .search-box input:focus { outline: none; }
+    .search-clear {
+      position: absolute; right: 10px; top: 50%;
+      transform: translateY(-50%);
+      width: 22px; height: 22px;
+      color: #767676; font-size: 0.85rem;
+      display: none;
+    }
+    .search-clear.visible { display: flex; align-items: center; justify-content: center; }
+    .search-clear:hover { color: #0A0A0A; }
+
+    .sort-indicator {
+      font-family: Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #767676;
+      margin-bottom: 14px;
+    }
+    .sort-indicator strong { color: #0A0A0A; font-weight: 400; }
+
+    table.history-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #0A0A0A;
+    }
+    .history-table th {
+      text-align: left; padding: 10px 14px;
+      font-family: Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #767676;
+      font-weight: 400;
+      border-bottom: 1px solid #0A0A0A;
+    }
+    .history-table td {
+      padding: 12px 14px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #F2F2F2;
+    }
+    .history-table tr:last-child td { border-bottom: none; }
+    .history-table tr:hover { background: #FAFAFA; }
+    .history-table .num { font-family: Consolas, monospace; text-align: right; }
+    .history-table .actions { display: flex; gap: 2px; justify-content: flex-end; }
+    .icon-btn {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      color: #4A4A4A;
+      transition: all 0.1s;
+    }
+    .icon-btn:hover { background: #F2F2F2; color: #0A0A0A; }
+    .icon-btn.danger:hover { background: #0A0A0A; color: #FFFFFF; }
+
+    .empty-state {
+      text-align: center; padding: 56px 24px;
+      border: 1px dashed #C5C5C5;
+    }
+    .empty-state h4 {
+      font-family: Cambria, serif;
+      font-size: 1.05rem;
+      color: #0A0A0A;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+    .empty-state p { font-size: 0.875rem; color: #767676; }
+
+    .pagination {
+      display: flex; justify-content: center; align-items: center;
+      gap: 12px; margin-top: 20px;
+      font-size: 0.875rem;
+    }
+    .pagination button {
+      padding: 6px 14px;
+      font-family: Cambria, serif;
+      color: #0A0A0A;
+      border: 1px solid #0A0A0A;
+      background: #FFFFFF;
+      transition: all 0.1s;
+    }
+    .pagination button:hover:not(:disabled) { background: #0A0A0A; color: #FFFFFF; }
+    .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .pagination .indicator {
+      font-family: Consolas, monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      color: #767676;
+    }
+
+    .btn-outline {
+      background: #FFFFFF; color: #0A0A0A;
+      border: 1px solid #0A0A0A;
+      padding: 11px 18px;
+      font-family: Cambria, serif;
+      font-size: 0.9rem;
+      transition: all 0.1s;
+    }
+    .btn-outline:hover { background: #0A0A0A; color: #FFFFFF; }
+
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(10, 10, 10, 0.5);
+      display: none; align-items: center; justify-content: center;
+      z-index: 50;
+      padding: 24px;
+    }
+    .modal-backdrop.visible { display: flex; }
+    .modal {
+      background: #FFFFFF;
+      border: 1px solid #0A0A0A;
+      max-width: 740px; width: 100%;
+      max-height: 88vh; overflow-y: auto;
+    }
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid #0A0A0A;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .modal-header h3 {
+      font-family: Cambria, serif;
+      font-size: 1.15rem;
+      font-weight: 400;
+    }
+    .modal-header h3 small {
+      display: block;
+      font-family: Consolas, monospace;
+      font-size: 0.7rem; color: #767676;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+    .modal-body { padding: 18px 24px; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    @media (max-width: 580px) { .modal-grid { grid-template-columns: 1fr; } }
+    .modal-grid h4 {
+      font-family: Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #0A0A0A;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #0A0A0A;
+      font-weight: 400;
+    }
+    .kv {
+      display: flex; justify-content: space-between;
+      padding: 5px 0;
+      font-size: 0.85rem;
+      border-bottom: 1px dotted #E5E5E5;
+    }
+    .kv .k { color: #4A4A4A; }
+    .kv .v { font-family: Consolas, monospace; color: #0A0A0A; }
+    .modal-footer {
+      padding: 14px 24px;
+      border-top: 1px solid #0A0A0A;
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+    .btn-secondary {
+      background: #0A0A0A; color: #FFFFFF;
+      padding: 9px 16px;
+      font-family: Cambria, serif;
+      font-size: 0.875rem;
+    }
+    .btn-secondary:hover { background: #2A2A2A; }
+    .btn-danger {
+      background: #FFFFFF; color: #B8412E;
+      border: 1px solid #B8412E;
+      padding: 9px 16px;
+      font-family: Cambria, serif;
+      font-size: 0.875rem;
+    }
+    .btn-danger:hover { background: #B8412E; color: #FFFFFF; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        Box<span class="dot"></span>Rate
+        <small>offline · v2</small>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="calculator">Calculator</button>
+        <button class="tab" data-tab="history">History</button>
+      </div>
+    </div>
+
+    <div class="view view-calculator">
+      <div class="calc-grid">
+        <div class="form-grid">
+          <div class="section-head">Order</div>
+          <div class="row">
+            <label>Date</label>
+            <input class="input computed-display" type="text" id="date" readonly>
+          </div>
+          <div class="row">
+            <label>Ply <span class="unit">layers</span></label>
+            <select class="select" id="ply">
+              <option value="3">3 ply</option>
+              <option value="5" selected>5 ply</option>
+              <option value="7">7 ply</option>
+              <option value="9">9 ply</option>
+            </select>
+          </div>
+          <div class="row full">
+            <label>Party Name</label>
+            <div class="autocomplete-wrap">
+              <input class="input" type="text" id="partyName" autocomplete="off" placeholder="Hotel / client name">
+              <div class="autocomplete-list" id="partyAutocomplete"></div>
+            </div>
+          </div>
+          <div class="row">
+            <label>Box Name</label>
+            <input class="input" type="text" id="boxName" placeholder="What kind of box">
+          </div>
+          <div class="row">
+            <label>Total Sheets</label>
+            <input class="input" type="number" id="totalSheets" step="0.01" min="0">
+          </div>
+
+          <div class="section-head">Sheet</div>
+          <div class="row">
+            <label>Size <span class="unit">L × W</span></label>
+            <div class="pair">
+              <input class="input" type="number" id="sheetL" step="0.01" min="0" placeholder="L">
+              <span class="x">×</span>
+              <input class="input" type="number" id="sheetW" step="0.01" min="0" placeholder="W">
+            </div>
+          </div>
+          <div class="row">
+            <label>GSM</label>
+            <input class="input" type="number" id="sheetGSM" step="0.01" min="0">
+          </div>
+          <div class="row">
+            <label>Duplex Rate <span class="unit">₹ per kg</span></label>
+            <input class="input" type="number" id="duplexRate" step="0.01" min="0">
+          </div>
+
+          <div class="section-head">Rolls (corrugation)</div>
+          <div class="row full">
+            <label>Roll Size <span class="unit">L × W</span></label>
+            <div class="pair">
+              <input class="input" type="number" id="rollL" step="0.01" min="0" placeholder="L">
+              <span class="x">×</span>
+              <input class="input" type="number" id="rollW" step="0.01" min="0" placeholder="W">
+            </div>
+          </div>
+          <div id="rollFields" style="display:contents"></div>
+
+          <div class="section-head">Lamination</div>
+          <div class="row">
+            <label>Enable</label>
+            <label class="toggle">
+              <input type="checkbox" id="enableLam">
+              <span class="track"></span>
+              <span class="label-text" id="enableLamLabel">No / outsourced</span>
+            </label>
+          </div>
+          <div class="row">
+            <label>Rate</label>
+            <input class="input" type="number" id="lamRate" step="0.01" min="0">
+          </div>
+          <div class="row full">
+            <label>Lam Size <span class="unit">L × W</span></label>
+            <div class="pair">
+              <input class="input" type="number" id="lamL" step="0.01" min="0" placeholder="L">
+              <span class="x">×</span>
+              <input class="input" type="number" id="lamW" step="0.01" min="0" placeholder="W">
+            </div>
+          </div>
+
+          <div class="section-head">Color / Printing</div>
+          <div class="row full">
+            <label>Mode</label>
+            <label class="toggle">
+              <input type="checkbox" id="useColorRate" checked>
+              <span class="track"></span>
+              <span class="label-text" id="useColorRateLabel">Colors × Rate</span>
+            </label>
+          </div>
+          <div id="pathA" style="display:contents">
+            <div class="row">
+              <label>Colors</label>
+              <select class="select" id="colors">
+                <option value="">—</option>
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+            <div class="row">
+              <label>Color Rate <span class="unit">₹ per color</span></label>
+              <input class="input" type="number" id="colorRate" step="0.01" min="0">
+            </div>
+          </div>
+          <div id="pathB" class="hidden" style="display:contents">
+            <div class="row">
+              <label>Sheets Printed</label>
+              <input class="input" type="number" id="sheetsPrinted" step="0.01" min="0">
+            </div>
+            <div class="row">
+              <label>Print Cost <span class="unit">₹ total</span></label>
+              <input class="input" type="number" id="printCost" step="0.01" min="0">
+            </div>
+          </div>
+
+          <div class="section-head">Process &amp; Overheads</div>
+          <div class="row">
+            <label>Sheet Pasting</label>
+            <input class="input" type="number" id="sheetPasting" step="0.01" min="0" value="0">
+          </div>
+          <div class="row">
+            <label>Cutting &amp; Pasting</label>
+            <input class="input" type="number" id="cuttingPasting" step="0.01" min="0" value="0">
+          </div>
+          <div class="row full">
+            <label>Labour <span class="unit">% — preset or custom</span></label>
+            <div class="labour-row">
+              <select class="select" id="labourPreset">
+                <option value="10" selected>10%</option>
+                <option value="20">20%</option>
+                <option value="30">30%</option>
+                <option value="40">40%</option>
+                <option value="50">50%</option>
+                <option value="">— custom</option>
+              </select>
+              <input class="input" type="number" id="labourCustom" step="0.01" min="0" placeholder="Custom %">
+            </div>
+          </div>
+          <div class="row">
+            <label>Boxes / Sheet</label>
+            <input class="input" type="number" id="boxesPerSheet" step="0.01" min="0">
+          </div>
+          <div class="row">
+            <label>Cartage <span class="unit">₹ flat</span></label>
+            <input class="input" type="number" id="cartage" step="0.01" min="0" value="0">
+          </div>
+        </div>
+
+        <aside class="output-panel">
+          <h3>Costing</h3>
+          <div class="out-row"><span class="lbl">Duplex</span><span class="val" id="o-duplexCost">—</span></div>
+          <div class="out-row"><span class="lbl">Lamination</span><span class="val" id="o-lamCost">—</span></div>
+          <div class="out-row"><span class="lbl">Printing</span><span class="val" id="o-printingCost">—</span></div>
+          <div class="out-row"><span class="lbl">Nali</span><span class="val" id="o-naliCost">—</span></div>
+          <div class="out-row"><span class="lbl">Sheet Pasting</span><span class="val" id="o-sheetPastingCost">—</span></div>
+          <div class="out-row"><span class="lbl">Cutting &amp; Pasting</span><span class="val" id="o-cuttingPastingCost">—</span></div>
+          <div class="out-row subtotal"><span class="lbl">Subtotal</span><span class="val" id="o-subtotal">—</span></div>
+          <div class="out-row"><span class="lbl">Labour <small id="o-labourPct"></small></span><span class="val" id="o-labourCost">—</span></div>
+          <div class="out-row"><span class="lbl">Cartage</span><span class="val" id="o-cartage">—</span></div>
+          <div class="out-row total"><span class="lbl">Total Cost</span><span class="val" id="o-totalCost">—</span></div>
+          <div class="out-row" style="border:none;"><span class="lbl">Boxes / Sheet</span><span class="val" id="o-boxesPerSheet">—</span></div>
+          <div class="out-row rate"><span class="lbl">Rate / Box</span><span class="val" id="o-rate">—</span></div>
+
+          <div class="save-bar">
+            <button class="btn btn-primary" id="saveBtn">Save Calculation</button>
+            <button class="btn btn-ghost" id="newBtn" title="Reset form">Reset</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="view view-history hidden">
+      <div class="history-controls">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search by Party Name…" autocomplete="off">
+          <button class="search-clear" id="searchClear">✕</button>
+        </div>
+        <button class="btn-outline" id="exportBtn">Export Backup</button>
+        <button class="btn-outline" id="importBtn">Import Backup</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+      <div class="sort-indicator">
+        Sorted by <strong>Party Name</strong> · A → Z
+      </div>
+      <div id="historyContent"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">
+          Calculation
+          <small id="modalSub"></small>
+        </h3>
+        <button class="icon-btn" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-danger" id="modalDelete">Delete</button>
+        <button class="btn-outline" id="modalClone">Clone to Calculator</button>
+        <button class="btn-secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ════════════════════════════════════════════════════════════════
+       BoxRate v2 — UPDATED: lamCost = (lamL × lamW) / (lamRate / 100)
+       ──────────────────────────────────────────────────────────────── */
+
+    const STORE_KEY = 'boxrate.records.v1';
+    const $ = (id) => document.getElementById(id);
+    const num = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+    const safe = (n, denom) => (denom > 0 ? n / denom : 0);
+    const fmtINR = (n) => {
+      if (!isFinite(n) || n === 0) return '₹0.00';
+      return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    const fmtNum = (n) => (isFinite(n) ? n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00');
+    const todayISO = () => {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    };
+    const todayDisplay = () => {
+      const d = new Date();
+      return String(d.getDate()).padStart(2, '0') + '-' +
+             String(d.getMonth() + 1).padStart(2, '0') + '-' +
+             d.getFullYear();
+    };
+    const uuid = () => 'r-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+
+    function loadAll() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+      catch { return []; }
+    }
+    function saveAll(records) { localStorage.setItem(STORE_KEY, JSON.stringify(records)); }
+
+    const state = {
+      view: 'calculator',
+      records: loadAll(),
+      searchQuery: '',
+      currentPage: 1,
+      pageSize: 10,
+      viewingRecord: null,
+    };
+
+    $('date').value = todayDisplay();
+
+    function rollCount(ply) { return { 3: 1, 5: 2, 7: 3, 9: 4 }[ply] || 1; }
+
+    function buildRollFields() {
+      const ply = parseInt($('ply').value, 10);
+      const count = rollCount(ply);
+      const container = $('rollFields');
+      const cache = {};
+      ['1','2','3','4'].forEach(i => {
+        ['a','b'].forEach(p => {
+          const el = document.getElementById(`roll${i}GSM${p}`);
+          if (el) cache[`roll${i}${p}`] = el.value;
+        });
+        const pe = document.getElementById(`roll${i}Price`);
+        if (pe) cache[`roll${i}price`] = pe.value;
+      });
+      container.innerHTML = '';
+      for (let i = 1; i <= count; i++) {
+        const wrap = document.createElement('div');
+        wrap.style.display = 'contents';
+        wrap.innerHTML = `
+          <div class="row full">
+            <label>Roll ${i} GSM <span class="unit">a + (b × 1.6)</span></label>
+            <div class="gsm-row">
+              <input class="input" type="number" id="roll${i}GSMa" step="0.01" min="0" placeholder="a">
+              <span class="x">×</span>
+              <input class="input" type="number" id="roll${i}GSMb" step="0.01" min="0" placeholder="b">
+              <span class="gsm-out" id="gsmSum${i}">—</span>
+            </div>
+          </div>
+          <div class="row">
+            <label>Roll ${i} Price <span class="unit">₹ per kg</span></label>
+            <input class="input" type="number" id="roll${i}Price" step="0.01" min="0">
+          </div>
+          <div class="row"></div>
+        `;
+        container.appendChild(wrap);
+      }
+      ['1','2','3','4'].forEach(i => {
+        ['a','b'].forEach(p => {
+          const k = `roll${i}${p}`;
+          const el = document.getElementById(`roll${i}GSM${p}`);
+          if (el && cache[k] !== undefined) el.value = cache[k];
+        });
+        const priceEl = document.getElementById(`roll${i}Price`);
+        if (priceEl && cache[`roll${i}price`] !== undefined) priceEl.value = cache[`roll${i}price`];
+      });
+      container.querySelectorAll('input').forEach(el => el.addEventListener('input', recompute));
+    }
+
+    function readInputs() {
+      const ply = parseInt($('ply').value, 10);
+      const inputs = {
+        date: todayISO(),
+        partyName: $('partyName').value.trim(),
+        boxName: $('boxName').value.trim(),
+        totalSheets: num($('totalSheets').value),
+        ply,
+        sheetL: num($('sheetL').value),
+        sheetW: num($('sheetW').value),
+        sheetGSM: num($('sheetGSM').value),
+        duplexRate: num($('duplexRate').value),
+        rollL: num($('rollL').value),
+        rollW: num($('rollW').value),
+        lamL: num($('lamL').value),
+        lamW: num($('lamW').value),
+        lamRate: num($('lamRate').value),
+        enableLam: $('enableLam').checked,
+        useColorRate: $('useColorRate').checked,
+        colors: num($('colors').value),
+        colorRate: num($('colorRate').value),
+        sheetsPrinted: num($('sheetsPrinted').value),
+        printCost: num($('printCost').value),
+        sheetPasting: num($('sheetPasting').value),
+        cuttingPasting: num($('cuttingPasting').value),
+        labourPct: ($('labourPreset').value !== '' ? num($('labourPreset').value) : num($('labourCustom').value)),
+        boxesPerSheet: num($('boxesPerSheet').value),
+        cartage: num($('cartage').value),
+      };
+      for (let i = 1; i <= 4; i++) {
+        inputs[`roll${i}GSMa`] = num((document.getElementById(`roll${i}GSMa`) || {}).value);
+        inputs[`roll${i}GSMb`] = num((document.getElementById(`roll${i}GSMb`) || {}).value);
+        inputs[`roll${i}Price`] = num((document.getElementById(`roll${i}Price`) || {}).value);
+      }
+      return inputs;
+    }
+
+    function compute(inp) {
+      const out = {};
+      out.gsmSum1 = inp.roll1GSMa + (inp.roll1GSMb * 1.6);
+      out.gsmSum2 = inp.roll2GSMa + (inp.roll2GSMb * 1.6);
+      out.gsmSum3 = inp.roll3GSMa + (inp.roll3GSMb * 1.6);
+      out.gsmSum4 = inp.roll4GSMa + (inp.roll4GSMb * 1.6);
+
+      out.duplexCost = (inp.sheetL * inp.sheetW * inp.sheetGSM) / 1550 * inp.duplexRate / 1000;
+
+      // ★ UPDATED: lamRate is divided by 100 first
+      out.lamCost = safe(inp.lamL * inp.lamW, inp.lamRate / 100);
+
+      if (inp.useColorRate) {
+        out.printingCost = safe(inp.colors * inp.colorRate, inp.totalSheets);
+      } else {
+        out.printingCost = safe(inp.printCost, inp.sheetsPrinted);
+      }
+
+      const naliTerm = (i) => ((inp.rollL * inp.rollW * out[`gsmSum${i}`]) / 1550 * inp[`roll${i}Price`]) / 1000;
+      const layers = rollCount(inp.ply);
+      out.naliCost = 0;
+      for (let i = 1; i <= layers; i++) out.naliCost += naliTerm(i);
+
+      out.sheetPastingCost = inp.sheetPasting;
+      out.cuttingPastingCost = inp.cuttingPasting;
+      out.subtotal = out.duplexCost + out.lamCost + out.printingCost
+                   + out.naliCost + out.sheetPastingCost + out.cuttingPastingCost;
+
+      const lpct = (inp.labourPct || 0) / 100;
+      out.labourCost = inp.enableLam ? lpct * out.subtotal : lpct * (out.subtotal - out.lamCost);
+      out.totalCost = out.subtotal + out.labourCost + inp.cartage;
+      out.rate = safe(out.totalCost, inp.boxesPerSheet);
+      return out;
+    }
+
+    function renderOutputs(inp, out) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`gsmSum${i}`);
+        if (el) {
+          const hasInput = inp[`roll${i}GSMa`] > 0 || inp[`roll${i}GSMb`] > 0;
+          el.textContent = hasInput ? fmtNum(out[`gsmSum${i}`]) : '—';
+        }
+      }
+      $('o-duplexCost').textContent = fmtINR(out.duplexCost);
+      $('o-lamCost').textContent = fmtINR(out.lamCost);
+      $('o-printingCost').textContent = fmtINR(out.printingCost);
+      $('o-naliCost').textContent = fmtINR(out.naliCost);
+      $('o-sheetPastingCost').textContent = fmtINR(out.sheetPastingCost);
+      $('o-cuttingPastingCost').textContent = fmtINR(out.cuttingPastingCost);
+      $('o-subtotal').textContent = fmtINR(out.subtotal);
+      $('o-labourCost').textContent = fmtINR(out.labourCost);
+      $('o-labourPct').textContent = inp.labourPct ? `(${inp.labourPct}%)` : '';
+      $('o-cartage').textContent = fmtINR(inp.cartage);
+      $('o-totalCost').textContent = fmtINR(out.totalCost);
+      $('o-boxesPerSheet').textContent = inp.boxesPerSheet > 0 ? fmtNum(inp.boxesPerSheet) : '—';
+      $('o-rate').textContent = inp.boxesPerSheet > 0 ? fmtINR(out.rate) : '—';
+    }
+
+    function recompute() {
+      const inp = readInputs();
+      const out = compute(inp);
+      renderOutputs(inp, out);
+    }
+
+    function applyToggles() {
+      $('enableLamLabel').textContent = $('enableLam').checked ? 'Yes / in-house' : 'No / outsourced';
+      const useRate = $('useColorRate').checked;
+      $('useColorRateLabel').textContent = useRate ? 'Colors × Rate' : 'Cost ÷ Sheets';
+      $('pathA').classList.toggle('hidden', !useRate);
+      $('pathB').classList.toggle('hidden', useRate);
+      const preset = $('labourPreset');
+      const custom = $('labourCustom');
+      if (preset.value !== '') custom.value = '';
+    }
+
+    function uniquePartyNames() {
+      const set = new Set();
+      state.records.forEach(r => { if (r.partyName) set.add(r.partyName); });
+      return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }
+    function setupAutocomplete() {
+      const input = $('partyName');
+      const list = $('partyAutocomplete');
+      input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        if (!q) { list.classList.remove('visible'); return; }
+        const matches = uniquePartyNames().filter(n => n.toLowerCase().includes(q)).slice(0, 8);
+        if (matches.length === 0) { list.classList.remove('visible'); return; }
+        list.innerHTML = matches.map(n => `<div class="autocomplete-item">${escapeHTML(n)}</div>`).join('');
+        list.classList.add('visible');
+      });
+      list.addEventListener('click', (e) => {
+        if (e.target.classList.contains('autocomplete-item')) {
+          input.value = e.target.textContent;
+          list.classList.remove('visible');
+          recompute();
+        }
+      });
+      input.addEventListener('blur', () => setTimeout(() => list.classList.remove('visible'), 150));
+    }
+
+    function escapeHTML(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function showToast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('visible');
+      setTimeout(() => t.classList.remove('visible'), 2200);
+    }
+    function saveCalculation() {
+      const inp = readInputs();
+      if (!inp.partyName) { showToast('Party name is required'); return; }
+      if (!inp.boxName) { showToast('Box name is required'); return; }
+      const out = compute(inp);
+      const record = {
+        id: uuid(), savedAt: new Date().toISOString(),
+        date: inp.date, partyName: inp.partyName, boxName: inp.boxName,
+        ply: inp.ply, totalSheets: inp.totalSheets,
+        rate: out.rate, totalCost: out.totalCost,
+        inputs: inp, outputs: out,
+      };
+      state.records.push(record);
+      saveAll(state.records);
+      showToast('Saved · ' + record.partyName);
+    }
+    function resetForm() {
+      document.querySelectorAll('.view-calculator input[type="number"]').forEach(el => el.value = '');
+      document.querySelectorAll('.view-calculator input[type="text"]:not([readonly])').forEach(el => el.value = '');
+      $('sheetPasting').value = '0'; $('cuttingPasting').value = '0'; $('cartage').value = '0';
+      $('ply').value = '5';
+      $('enableLam').checked = false;
+      $('useColorRate').checked = true;
+      $('labourPreset').value = '10'; $('labourCustom').value = '';
+      $('colors').value = '';
+      $('date').value = todayDisplay();
+      buildRollFields();
+      applyToggles();
+      recompute();
+    }
+
+    function filteredSortedRecords() {
+      const q = state.searchQuery.trim().toLowerCase();
+      let arr = [...state.records];
+      if (q) arr = arr.filter(r => r.partyName.toLowerCase().includes(q));
+      arr.sort((a, b) => a.partyName.localeCompare(b.partyName));
+      return arr;
+    }
+    function renderHistory() {
+      const root = $('historyContent');
+      const all = filteredSortedRecords();
+      const total = all.length;
+      if (total === 0) {
+        const hasAny = state.records.length > 0;
+        root.innerHTML = `
+          <div class="empty-state">
+            <h4>${hasAny ? 'No matches' : 'No calculations yet'}</h4>
+            <p>${hasAny
+              ? `No party matches "${escapeHTML(state.searchQuery)}".`
+              : 'Save one from the Calculator tab to see it here.'}</p>
+          </div>`;
+        return;
+      }
+      const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+      if (state.currentPage > totalPages) state.currentPage = totalPages;
+      const start = (state.currentPage - 1) * state.pageSize;
+      const page = all.slice(start, start + state.pageSize);
+
+      root.innerHTML = `
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Party</th><th>Box</th>
+              <th class="num">Ply</th><th class="num">Rate</th><th class="num">Total</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${page.map(r => `
+              <tr>
+                <td class="mono">${formatDateDisplay(r.date)}</td>
+                <td>${escapeHTML(r.partyName)}</td>
+                <td>${escapeHTML(r.boxName)}</td>
+                <td class="num">${r.ply}</td>
+                <td class="num">${fmtINR(r.rate)}</td>
+                <td class="num">${fmtINR(r.totalCost)}</td>
+                <td class="actions">
+                  <button class="icon-btn" title="View" data-action="view" data-id="${r.id}">○</button>
+                  <button class="icon-btn" title="Clone" data-action="clone" data-id="${r.id}">⎘</button>
+                  <button class="icon-btn danger" title="Delete" data-action="delete" data-id="${r.id}">×</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        ${totalPages > 1 ? `
+          <div class="pagination">
+            <button id="prevPage" ${state.currentPage === 1 ? 'disabled' : ''}>← Prev</button>
+            <span class="indicator">Page ${state.currentPage} / ${totalPages} · ${total} record${total === 1 ? '' : 's'}</span>
+            <button id="nextPage" ${state.currentPage === totalPages ? 'disabled' : ''}>Next →</button>
+          </div>` : `<div class="pagination"><span class="indicator">${total} record${total === 1 ? '' : 's'}</span></div>`}
+      `;
+      const prev = $('prevPage'); const next = $('nextPage');
+      if (prev) prev.onclick = () => { state.currentPage--; renderHistory(); };
+      if (next) next.onclick = () => { state.currentPage++; renderHistory(); };
+      root.querySelectorAll('[data-action]').forEach(btn => {
+        btn.onclick = () => {
+          const action = btn.dataset.action;
+          const id = btn.dataset.id;
+          if (action === 'view') openRecord(id);
+          if (action === 'clone') cloneRecord(id);
+          if (action === 'delete') deleteRecord(id);
+        };
+      });
+    }
+    function formatDateDisplay(iso) {
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${d}-${m}-${y}`;
+    }
+
+    function openRecord(id) {
+      const r = state.records.find(x => x.id === id);
+      if (!r) return;
+      state.viewingRecord = r;
+      $('modalTitle').firstChild.nodeValue = r.boxName + ' ';
+      $('modalSub').textContent = r.partyName + ' · ' + formatDateDisplay(r.date);
+      const i = r.inputs, o = r.outputs;
+      const kv = (k, v) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+      $('modalBody').innerHTML = `
+        <div class="modal-grid">
+          <div>
+            <h4>Inputs</h4>
+            ${kv('Total Sheets', fmtNum(i.totalSheets))}
+            ${kv('Ply', i.ply)}
+            ${kv('Sheet Size', i.sheetL + ' × ' + i.sheetW)}
+            ${kv('Sheet GSM', fmtNum(i.sheetGSM))}
+            ${kv('Duplex Rate', '₹' + fmtNum(i.duplexRate))}
+            ${kv('Roll Size', i.rollL + ' × ' + i.rollW)}
+            ${[1,2,3,4].slice(0, rollCount(i.ply)).map(n =>
+              kv(`Roll ${n} GSM (a × b)`, `${i['roll'+n+'GSMa']} × ${i['roll'+n+'GSMb']} → ${fmtNum(o['gsmSum'+n])}`) +
+              kv(`Roll ${n} Price`, '₹' + fmtNum(i['roll'+n+'Price']))
+            ).join('')}
+            ${kv('Lamination', i.enableLam ? 'In-house' : 'Outsourced')}
+            ${kv('Lam Size', i.lamL + ' × ' + i.lamW)}
+            ${kv('Lam Rate', fmtNum(i.lamRate))}
+            ${kv('Print Mode', i.useColorRate ? 'Colors × Rate' : 'Cost ÷ Sheets')}
+            ${i.useColorRate
+              ? kv('Colors × Rate', `${i.colors} × ₹${fmtNum(i.colorRate)}`)
+              : kv('Cost ÷ Sheets', `₹${fmtNum(i.printCost)} ÷ ${fmtNum(i.sheetsPrinted)}`)}
+            ${kv('Sheet Pasting', '₹' + fmtNum(i.sheetPasting))}
+            ${kv('Cutting & Pasting', '₹' + fmtNum(i.cuttingPasting))}
+            ${kv('Labour %', i.labourPct + '%')}
+            ${kv('Boxes / Sheet', fmtNum(i.boxesPerSheet))}
+            ${kv('Cartage', '₹' + fmtNum(i.cartage))}
+          </div>
+          <div>
+            <h4>Costing</h4>
+            ${kv('Duplex', fmtINR(o.duplexCost))}
+            ${kv('Lamination', fmtINR(o.lamCost))}
+            ${kv('Printing', fmtINR(o.printingCost))}
+            ${kv('Nali', fmtINR(o.naliCost))}
+            ${kv('Sheet Pasting', fmtINR(o.sheetPastingCost))}
+            ${kv('Cutting & Pasting', fmtINR(o.cuttingPastingCost))}
+            ${kv('Subtotal', fmtINR(o.subtotal))}
+            ${kv('Labour', fmtINR(o.labourCost))}
+            ${kv('Cartage', fmtINR(i.cartage))}
+            ${kv('Total Cost', fmtINR(o.totalCost))}
+            ${kv('Rate / Box', fmtINR(o.rate))}
+          </div>
+        </div>
+      `;
+      $('modalBackdrop').classList.add('visible');
+    }
+    function closeModal() {
+      $('modalBackdrop').classList.remove('visible');
+      state.viewingRecord = null;
+    }
+    window.closeModal = closeModal;
+
+    function cloneRecord(id) {
+      const r = state.records.find(x => x.id === id);
+      if (!r) return;
+      const i = r.inputs;
+      $('partyName').value = i.partyName;
+      $('boxName').value = i.boxName + ' (copy)';
+      $('totalSheets').value = i.totalSheets || '';
+      $('ply').value = i.ply;
+      $('sheetL').value = i.sheetL || ''; $('sheetW').value = i.sheetW || '';
+      $('sheetGSM').value = i.sheetGSM || ''; $('duplexRate').value = i.duplexRate || '';
+      $('rollL').value = i.rollL || ''; $('rollW').value = i.rollW || '';
+      $('lamL').value = i.lamL || ''; $('lamW').value = i.lamW || '';
+      $('lamRate').value = i.lamRate || '';
+      $('enableLam').checked = !!i.enableLam;
+      $('useColorRate').checked = !!i.useColorRate;
+      $('colors').value = i.colors || '';
+      $('colorRate').value = i.colorRate || '';
+      $('sheetsPrinted').value = i.sheetsPrinted || '';
+      $('printCost').value = i.printCost || '';
+      $('sheetPasting').value = i.sheetPasting || 0;
+      $('cuttingPasting').value = i.cuttingPasting || 0;
+      const presetVals = ['10','20','30','40','50'];
+      if (presetVals.includes(String(i.labourPct))) {
+        $('labourPreset').value = String(i.labourPct);
+        $('labourCustom').value = '';
+      } else {
+        $('labourPreset').value = '';
+        $('labourCustom').value = i.labourPct;
+      }
+      $('boxesPerSheet').value = i.boxesPerSheet || '';
+      $('cartage').value = i.cartage || 0;
+      $('date').value = todayDisplay();
+      buildRollFields();
+      for (let n = 1; n <= 4; n++) {
+        const a = document.getElementById(`roll${n}GSMa`);
+        const b = document.getElementById(`roll${n}GSMb`);
+        const p = document.getElementById(`roll${n}Price`);
+        if (a) a.value = i[`roll${n}GSMa`] || '';
+        if (b) b.value = i[`roll${n}GSMb`] || '';
+        if (p) p.value = i[`roll${n}Price`] || '';
+      }
+      applyToggles();
+      recompute();
+      closeModal();
+      switchView('calculator');
+      showToast('Cloned to Calculator');
+    }
+    function deleteRecord(id) {
+      const r = state.records.find(x => x.id === id);
+      if (!r) return;
+      if (!confirm(`Delete this calculation for ${r.partyName} (${r.boxName})?\n\nThis cannot be undone.`)) return;
+      state.records = state.records.filter(x => x.id !== id);
+      saveAll(state.records);
+      closeModal();
+      renderHistory();
+      showToast('Deleted');
+    }
+    $('modalDelete').onclick = () => state.viewingRecord && deleteRecord(state.viewingRecord.id);
+    $('modalClone').onclick = () => state.viewingRecord && cloneRecord(state.viewingRecord.id);
+
+    function exportBackup() {
+      const blob = new Blob([JSON.stringify(state.records, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `boxrate-backup-${todayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Backup downloaded');
+    }
+    function importBackup(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!Array.isArray(data)) throw new Error('Not an array');
+          if (!confirm(`Import ${data.length} records? This MERGES with existing records.`)) return;
+          const existingIds = new Set(state.records.map(r => r.id));
+          let added = 0;
+          data.forEach(r => {
+            if (r && r.id && !existingIds.has(r.id)) { state.records.push(r); added++; }
+          });
+          saveAll(state.records);
+          renderHistory();
+          showToast(`Imported ${added} new records`);
+        } catch (e) {
+          showToast('Invalid backup file');
+        }
+      };
+      reader.readAsText(file);
+    }
+    $('exportBtn').onclick = exportBackup;
+    $('importBtn').onclick = () => $('importFile').click();
+    $('importFile').onchange = (e) => {
+      if (e.target.files[0]) importBackup(e.target.files[0]);
+      e.target.value = '';
+    };
+
+    function switchView(name) {
+      state.view = name;
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      document.querySelector('.view-' + name).classList.remove('hidden');
+      if (name === 'history') {
+        state.currentPage = 1;
+        renderHistory();
+      }
+    }
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => switchView(t.dataset.tab);
+    });
+
+    $('searchInput').addEventListener('input', (e) => {
+      state.searchQuery = e.target.value;
+      state.currentPage = 1;
+      $('searchClear').classList.toggle('visible', !!e.target.value);
+      renderHistory();
+    });
+    $('searchClear').onclick = () => {
+      $('searchInput').value = '';
+      state.searchQuery = '';
+      $('searchClear').classList.remove('visible');
+      renderHistory();
+    };
+
+    document.querySelectorAll('.view-calculator input, .view-calculator select').forEach(el => {
+      el.addEventListener('input', () => {
+        applyToggles();
+        if (el.id === 'ply') buildRollFields();
+        recompute();
+      });
+      el.addEventListener('change', () => {
+        applyToggles();
+        recompute();
+      });
+    });
+    $('saveBtn').onclick = saveCalculation;
+    $('newBtn').onclick = () => { if (confirm('Reset the form? Unsaved data will be lost.')) resetForm(); };
+
+    buildRollFields();
+    applyToggles();
+    setupAutocomplete();
+    recompute();
+  </script>
+</body>
+</html>
